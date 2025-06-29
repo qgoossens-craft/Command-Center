@@ -2,6 +2,8 @@ import { Setting, PluginSettingTab, Notice } from 'obsidian';
 import type { CommandCenterPlugin } from '../main';
 import type { CommandCenterSettings } from '../types/settings';
 import { CollapsibleSection } from '../utils/CollapsibleSection';
+import { IconService } from '../services/IconService';
+import { IconPicker } from '../components/IconPicker';
 
 export class FloatingSettingsPanel {
     private plugin: CommandCenterPlugin;
@@ -808,6 +810,176 @@ export class FloatingSettingsPanel {
         createWidgetBackgroundSettings(widgetBackgroundsEl, 'Recent Files', 'recentFiles');
         widgetBackgroundsEl.createEl('hr');
         createWidgetBackgroundSettings(widgetBackgroundsEl, 'Tasks', 'todos');
+
+        // Custom Icons Section
+        const iconsSection = new CollapsibleSection(
+            contentArea,
+            'Custom Icons',
+            'Customize icons for different widget elements',
+            '🎨',
+            true
+        );
+        const iconsEl = iconsSection.getContentEl();
+
+        // Enable custom icons toggle
+        new Setting(iconsEl)
+            .setName('Enable Custom Icons')
+            .setDesc('Use custom icons instead of default ones')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.customIcons.useCustomIcons)
+                .onChange(async (value) => {
+                    this.plugin.settings.customIcons.useCustomIcons = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                    this.refreshPanel(); // Refresh to show/hide icon customization options
+                }));
+
+        if (this.plugin.settings.customIcons.useCustomIcons) {
+            // Todo icons
+            iconsEl.createEl('h3', { text: 'Todo Icons', cls: 'setting-item-heading' });
+            
+            new Setting(iconsEl)
+                .setName('Incomplete Todo Icon')
+                .setDesc('Icon for incomplete todo items (single emoji or Unicode character)')
+                .addText(text => text
+                    .setPlaceholder('☐')
+                    .setValue(this.plugin.settings.customIcons.todoStates.incomplete)
+                    .onChange(async (value) => {
+                        if (IconService.isValidIcon(value)) {
+                            this.plugin.settings.customIcons.todoStates.incomplete = value.trim();
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                        }
+                    }));
+
+            new Setting(iconsEl)
+                .setName('Completed Todo Icon')
+                .setDesc('Icon for completed todo items')
+                .addText(text => text
+                    .setPlaceholder('✓')
+                    .setValue(this.plugin.settings.customIcons.todoStates.completed)
+                    .onChange(async (value) => {
+                        if (IconService.isValidIcon(value)) {
+                            this.plugin.settings.customIcons.todoStates.completed = value.trim();
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                        }
+                    }));
+
+            // Widget icons
+            iconsEl.createEl('h3', { text: 'Widget Icons', cls: 'setting-item-heading' });
+            
+            new Setting(iconsEl)
+                .setName('Bookmark Icon')
+                .setDesc('Icon for bookmark items')
+                .addText(text => text
+                    .setPlaceholder('⭐')
+                    .setValue(this.plugin.settings.customIcons.bookmarks)
+                    .onChange(async (value) => {
+                        if (IconService.isValidIcon(value)) {
+                            this.plugin.settings.customIcons.bookmarks = value.trim();
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                        }
+                    }));
+
+            new Setting(iconsEl)
+                .setName('Recent Files Icon')
+                .setDesc('Icon for recent file items')
+                .addText(text => text
+                    .setPlaceholder('📄')
+                    .setValue(this.plugin.settings.customIcons.recentFiles)
+                    .onChange(async (value) => {
+                        if (IconService.isValidIcon(value)) {
+                            this.plugin.settings.customIcons.recentFiles = value.trim();
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                        }
+                    }));
+
+            new Setting(iconsEl)
+                .setName('Pinned Notes Icon')
+                .setDesc('Icon for pinned note items')
+                .addText(text => text
+                    .setPlaceholder('📌')
+                    .setValue(this.plugin.settings.customIcons.pinnedNotes)
+                    .onChange(async (value) => {
+                        if (IconService.isValidIcon(value)) {
+                            this.plugin.settings.customIcons.pinnedNotes = value.trim();
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                        }
+                    }));
+
+            new Setting(iconsEl)
+                .setName('Search Results Icon')
+                .setDesc('Icon for search result items')
+                .addText(text => text
+                    .setPlaceholder('🔍')
+                    .setValue(this.plugin.settings.customIcons.searchResults)
+                    .onChange(async (value) => {
+                        if (IconService.isValidIcon(value)) {
+                            this.plugin.settings.customIcons.searchResults = value.trim();
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                        }
+                    }));
+
+            // Action button icons
+            iconsEl.createEl('h3', { text: 'Action Button Icons', cls: 'setting-item-heading' });
+            iconsEl.createEl('p', { 
+                text: 'Customize icons for action buttons. Leave empty to use defaults.',
+                cls: 'setting-item-description'
+            });
+
+            const actionNames = this.plugin.iconService.getAvailableActionNames();
+            actionNames.forEach(actionName => {
+                const displayName = actionName.split('-').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ');
+                
+                new Setting(iconsEl)
+                    .setName(`${displayName} Icon`)
+                    .setDesc(`Icon for the ${displayName} action button`)
+                    .addText(text => text
+                        .setPlaceholder(this.plugin.iconService.getActionIcon(actionName))
+                        .setValue(this.plugin.settings.customIcons.actionButtons[actionName] || '')
+                        .onChange(async (value) => {
+                            if (value === '' || IconService.isValidIcon(value)) {
+                                if (value === '') {
+                                    delete this.plugin.settings.customIcons.actionButtons[actionName];
+                                } else {
+                                    this.plugin.settings.customIcons.actionButtons[actionName] = value.trim();
+                                }
+                                await this.plugin.saveSettings();
+                                this.plugin.refreshHomepage();
+                            }
+                        }));
+            });
+
+            // Compact Icon Picker for floating panel
+            iconsEl.createEl('h3', { text: 'Icon Browser', cls: 'setting-item-heading' });
+            const iconPickerDesc = iconsEl.createEl('div', { cls: 'setting-item-description' });
+            iconPickerDesc.createEl('p', { text: 'Search icons and click to copy:' });
+            
+            const iconPickerContainer = iconPickerDesc.createDiv({ cls: 'compact-icon-picker' });
+            
+            // Create the compact icon picker
+            new IconPicker(iconPickerContainer, {
+                onIconSelect: async (icon: string) => {
+                    try {
+                        await navigator.clipboard.writeText(icon);
+                        new Notice(`Copied "${icon}" to clipboard!`);
+                    } catch (error) {
+                        new Notice('Failed to copy to clipboard');
+                    }
+                },
+                maxHeight: '200px',
+                showSearch: true,
+                showCategories: false, // Too much for floating panel
+                compact: true
+            });
+        }
 
         // Content Limits Section
         const contentLimitsSection = new CollapsibleSection(

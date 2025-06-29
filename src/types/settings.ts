@@ -1,3 +1,5 @@
+import type { CustomIconSettings } from '../services/IconService';
+
 export interface CommandCenterSettings {
     // General settings
     customTitle: string;
@@ -125,6 +127,9 @@ export interface CommandCenterSettings {
             opacity: number;
         };
     };
+    
+    // Custom icons
+    customIcons: CustomIconSettings;
 }
 
 export const DEFAULT_SETTINGS: CommandCenterSettings = {
@@ -248,5 +253,20 @@ export const DEFAULT_SETTINGS: CommandCenterSettings = {
             color: '',
             opacity: 0.9
         }
+    },
+    
+    // Custom icons
+    customIcons: {
+        useCustomIcons: false,
+        actionButtons: {},
+        fileTypes: {},
+        todoStates: {
+            incomplete: '☐',
+            completed: '✓'
+        },
+        bookmarks: '⭐',
+        recentFiles: '📄',
+        pinnedNotes: '📌',
+        searchResults: '🔍'
     }
 };

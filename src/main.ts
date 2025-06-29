@@ -3,12 +3,14 @@ import { CommandCenterSettings, DEFAULT_SETTINGS } from './types/settings';
 import { HomepageView } from './views/HomepageView';
 import { CommandCenterSettingsTab } from './settings/SettingsTab';
 import { FloatingSettingsPanel } from './settings/FloatingSettingsPanel';
+import { IconService } from './services/IconService';
 import { VIEW_TYPE_HOMEPAGE, PLUGIN_NAME, HOMEPAGE_ICON } from './constants';
 
 export class CommandCenterPlugin extends Plugin {
     settings: CommandCenterSettings;
     private homepageView: HomepageView | null = null;
     private floatingSettings: FloatingSettingsPanel | null = null;
+    public iconService: IconService;
     public loadTime: number;
 
     async onload() {
@@ -17,6 +19,9 @@ export class CommandCenterPlugin extends Plugin {
         
         // Load settings
         await this.loadSettings();
+
+        // Initialize icon service
+        this.iconService = new IconService(this);
 
         // Initialize floating settings panel
         this.floatingSettings = new FloatingSettingsPanel(this);
@@ -83,6 +88,18 @@ export class CommandCenterPlugin extends Plugin {
         // Ensure widgetBackgrounds exists for migration compatibility
         if (!this.settings.widgetBackgrounds) {
             this.settings.widgetBackgrounds = DEFAULT_SETTINGS.widgetBackgrounds;
+            await this.saveSettings();
+        }
+        
+        // Ensure customIcons exists for migration compatibility
+        if (!this.settings.customIcons) {
+            this.settings.customIcons = DEFAULT_SETTINGS.customIcons;
+            await this.saveSettings();
+        }
+        
+        // Add new searchResults field if missing (migration)
+        if (!this.settings.customIcons.searchResults) {
+            this.settings.customIcons.searchResults = DEFAULT_SETTINGS.customIcons.searchResults;
             await this.saveSettings();
         }
     }

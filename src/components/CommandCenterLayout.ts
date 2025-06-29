@@ -267,23 +267,24 @@ export class CommandCenterLayout {
         
         const actionsGrid = actionsSection.createDiv({ cls: 'actions-grid' });
         
-        // Create action buttons using proper Obsidian patterns
-        this.createActionButton(actionsGrid, 'New Note', '📝', () => this.createNewNote());
-        this.createActionButton(actionsGrid, 'Random Note', '🎲', () => this.openRandomNote());
-        this.createActionButton(actionsGrid, 'Toggle Theme', '🌓', () => this.toggleTheme());
-        this.createActionButton(actionsGrid, 'Canvas', '🎨', () => this.openCanvas());
-        this.createActionButton(actionsGrid, 'Excalidraw', '✏️', () => this.openExcalidraw());
-        this.createActionButton(actionsGrid, 'Web Viewer', '🌐', () => this.openWebViewer());
-        this.createActionButton(actionsGrid, 'Today\'s Note', '📅', () => this.openTodayNote());
-        this.createActionButton(actionsGrid, 'Yesterday\'s Note', '📆', () => this.openYesterdayNote());
-        this.createActionButton(actionsGrid, 'Graph View', '🕸️', () => this.openGraph());
-        this.createActionButton(actionsGrid, 'Vault Stats', '📊', () => this.showVaultStats());
-        this.createActionButton(actionsGrid, 'Settings', '⚙️', () => this.openSettings());
+        // Create action buttons using proper Obsidian patterns with IconService
+        this.createActionButton(actionsGrid, 'New Note', 'new-note', () => this.createNewNote());
+        this.createActionButton(actionsGrid, 'Random Note', 'random-note', () => this.openRandomNote());
+        this.createActionButton(actionsGrid, 'Toggle Theme', 'toggle-theme', () => this.toggleTheme());
+        this.createActionButton(actionsGrid, 'Canvas', 'canvas', () => this.openCanvas());
+        this.createActionButton(actionsGrid, 'Excalidraw', 'excalidraw', () => this.openExcalidraw());
+        this.createActionButton(actionsGrid, 'Web Viewer', 'web-viewer', () => this.openWebViewer());
+        this.createActionButton(actionsGrid, 'Today\'s Note', 'today-note', () => this.openTodayNote());
+        this.createActionButton(actionsGrid, 'Yesterday\'s Note', 'yesterday-note', () => this.openYesterdayNote());
+        this.createActionButton(actionsGrid, 'Graph View', 'graph-view', () => this.openGraph());
+        this.createActionButton(actionsGrid, 'Vault Stats', 'vault-stats', () => this.showVaultStats());
+        this.createActionButton(actionsGrid, 'Settings', 'settings', () => this.openSettings());
     }
 
-    private createActionButton(container: HTMLElement, label: string, icon: string, onClick: () => void) {
+    private createActionButton(container: HTMLElement, label: string, actionName: string, onClick: () => void) {
         const button = container.createEl('button', { cls: 'cc-action-btn' });
-        button.createEl('span', { text: icon, cls: 'cc-action-icon' });
+        const iconValue = this.plugin.iconService.getActionIcon(actionName);
+        button.createEl('span', { text: iconValue, cls: 'cc-action-icon' });
         button.createEl('span', { text: label, cls: 'cc-action-label' });
         
         button.addEventListener('click', onClick);
@@ -380,6 +381,10 @@ export class CommandCenterLayout {
         
         recentFiles.forEach(file => {
             const fileItem = recentList.createDiv({ cls: 'file-item' });
+            
+            // Add file icon using IconService - use recentFiles icon from settings
+            const iconValue = this.plugin.iconService.getIcon('file');
+            fileItem.createEl('span', { text: iconValue, cls: 'file-icon' });
             
             const fileInfo = fileItem.createDiv({ cls: 'file-info' });
             fileInfo.createEl('div', { text: file.basename, cls: 'file-name' });
@@ -714,6 +719,10 @@ export class CommandCenterLayout {
 
     private renderBookmarkItem(container: HTMLElement, file: TFile) {
         const fileItem = container.createDiv({ cls: 'file-item' });
+        
+        // Add bookmark icon using IconService
+        const iconValue = this.plugin.iconService.getBookmarkIcon();
+        fileItem.createEl('span', { text: iconValue, cls: 'bookmark-icon' });
         
         const fileInfo = fileItem.createDiv({ cls: 'file-info' });
         fileInfo.createEl('div', { text: file.basename, cls: 'file-name' });

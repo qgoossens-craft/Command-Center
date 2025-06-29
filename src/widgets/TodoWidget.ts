@@ -17,9 +17,9 @@ export class TodoWidget extends Component {
     private container: HTMLElement;
     private todos: TodoItem[] = [];
     private todoFile: TFile | null = null;
-    private progressBar: HTMLElement;
-    private todoList: HTMLElement;
-    private addTodoInput: HTMLInputElement;
+    private progressBar!: HTMLElement;
+    private todoList!: HTMLElement;
+    private addTodoInput!: HTMLInputElement;
     private fileModifyEventRef: EventRef | null = null;
     private fileCreateEventRef: EventRef | null = null;
     private fileDeleteEventRef: EventRef | null = null;
@@ -212,7 +212,7 @@ export class TodoWidget extends Component {
             checkbox.addEventListener('change', () => this.toggleTodo(todo));
 
             // Text
-            const textEl = todoItem.createEl('span', {
+            todoItem.createEl('span', {
                 text: todo.text,
                 cls: 'todo-text'
             });
@@ -369,7 +369,7 @@ export class TodoWidget extends Component {
         const hideCounter = this.plugin.settings.autoCleanupCompleted && this.plugin.settings.cleanupDelayDays === 0;
         
         if (!hideCounter) {
-            const progressText = this.progressBar.createDiv({ 
+            this.progressBar.createDiv({ 
                 cls: 'progress-text',
                 text: `${completed}/${total} (${percentage}%)`
             });

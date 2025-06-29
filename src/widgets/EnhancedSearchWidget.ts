@@ -159,8 +159,9 @@ export class EnhancedSearchWidget extends Component {
         files.forEach((file, index) => {
             const resultItem = this.resultsContainer.createDiv({ cls: 'search-result-item' });
             
-            // File icon
-            const icon = resultItem.createEl('span', { cls: 'result-icon', text: '📄' });
+            // File icon using IconService
+            const iconValue = this.plugin.iconService.getSearchResultIcon();
+            const icon = resultItem.createEl('span', { cls: 'result-icon', text: iconValue });
             
             // File info
             const info = resultItem.createDiv({ cls: 'result-info' });

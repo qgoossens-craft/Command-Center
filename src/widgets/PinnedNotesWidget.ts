@@ -138,7 +138,8 @@ export class PinnedNotesWidget {
         if (this.plugin.settings.pinnedNotesViewMode === 'gallery') {
             const preview = contentWrapper.createDiv({ cls: 'pinned-note-preview' });
             // You could add logic here to extract first image or create a preview
-            preview.createEl('div', { text: '📄', cls: 'pinned-note-icon' });
+            const iconValue = this.plugin.iconService.getPinnedNoteIcon();
+            preview.createEl('div', { text: iconValue, cls: 'pinned-note-icon' });
         }
         
         // Note title
