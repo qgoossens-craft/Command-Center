@@ -47,11 +47,7 @@ export class TodoWidget extends Component {
         this.progressBar = header.createDiv({ cls: 'todo-progress-container' });
         this.updateProgressBar();
 
-        // Filter buttons
-        const filters = this.container.createDiv({ cls: 'todo-filters' });
-        this.createFilterButton(filters, 'All', () => this.filterTodos('all'));
-        this.createFilterButton(filters, 'Active', () => this.filterTodos('active'));
-        this.createFilterButton(filters, 'Completed', () => this.filterTodos('completed'));
+        // Filter buttons removed
 
         // Todo list
         this.todoList = this.container.createDiv({ cls: 'todo-list' });
@@ -80,13 +76,6 @@ export class TodoWidget extends Component {
         addButton.addEventListener('click', () => this.addNewTodo());
     }
 
-    private createFilterButton(container: HTMLElement, label: string, onClick: () => void) {
-        const button = container.createEl('button', {
-            text: label,
-            cls: 'todo-filter-btn'
-        });
-        button.addEventListener('click', onClick);
-    }
 
     private async loadTodos() {
         // Parse todos based on settings
@@ -189,19 +178,15 @@ export class TodoWidget extends Component {
         await this.loadTodos();
     }
 
-    private renderTodos(filter: 'all' | 'active' | 'completed' = 'all') {
+    private renderTodos() {
         this.todoList.empty();
 
-        let filteredTodos = this.todos;
-        if (filter === 'active') {
-            filteredTodos = this.todos.filter(todo => !todo.completed);
-        } else if (filter === 'completed') {
-            filteredTodos = this.todos.filter(todo => todo.completed);
-        }
+        // Show only active (non-completed) todos
+        const filteredTodos = this.todos.filter(todo => !todo.completed);
 
         if (filteredTodos.length === 0) {
             this.todoList.createEl('div', {
-                text: filter === 'completed' ? 'No completed tasks' : 'No tasks found',
+                text: 'No active tasks',
                 cls: 'todo-empty-state'
             });
             return;
@@ -256,18 +241,6 @@ export class TodoWidget extends Component {
         });
     }
 
-    private filterTodos(filter: 'all' | 'active' | 'completed') {
-        // Update filter buttons
-        this.container.querySelectorAll('.todo-filter-btn').forEach(btn => {
-            btn.removeClass('active');
-        });
-        
-        const filterButtons = this.container.querySelectorAll('.todo-filter-btn');
-        const filterIndex = filter === 'all' ? 0 : filter === 'active' ? 1 : 2;
-        filterButtons[filterIndex]?.addClass('active');
-
-        this.renderTodos(filter);
-    }
 
     private async toggleTodo(todo: TodoItem) {
         try {
@@ -404,18 +377,9 @@ export class TodoWidget extends Component {
     }
 
     private async refreshTodos() {
-        // Save current filter state
-        const activeFilter = this.container.querySelector('.todo-filter-btn.active');
-        let currentFilter: 'all' | 'active' | 'completed' = 'all';
-        if (activeFilter) {
-            const filterText = activeFilter.textContent?.toLowerCase();
-            if (filterText === 'active') currentFilter = 'active';
-            else if (filterText === 'completed') currentFilter = 'completed';
-        }
-        
         await this.parseTodos();
         this.updateProgressBar();
-        this.renderTodos(currentFilter);
+        this.renderTodos();
     }
 
     private registerFileEvents() {

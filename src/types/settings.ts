@@ -91,6 +91,40 @@ export interface CommandCenterSettings {
         collapsed: boolean;
     }>;
     maxPinnedContainers: number;
+    
+    // Widget backgrounds
+    widgetBackgrounds: {
+        search: {
+            enabled: boolean;
+            image: string;
+            color: string;
+            opacity: number;
+        };
+        quickActions: {
+            enabled: boolean;
+            image: string;
+            color: string;
+            opacity: number;
+        };
+        bookmarks: {
+            enabled: boolean;
+            image: string;
+            color: string;
+            opacity: number;
+        };
+        recentFiles: {
+            enabled: boolean;
+            image: string;
+            color: string;
+            opacity: number;
+        };
+        todos: {
+            enabled: boolean;
+            image: string;
+            color: string;
+            opacity: number;
+        };
+    };
 }
 
 export const DEFAULT_SETTINGS: CommandCenterSettings = {
@@ -180,5 +214,39 @@ export const DEFAULT_SETTINGS: CommandCenterSettings = {
     showPinnedNotes: false,
     pinnedNotesViewMode: 'list',
     pinnedContainers: [],
-    maxPinnedContainers: 3
+    maxPinnedContainers: 3,
+    
+    // Widget backgrounds
+    widgetBackgrounds: {
+        search: {
+            enabled: false,
+            image: '',
+            color: '',
+            opacity: 0.9
+        },
+        quickActions: {
+            enabled: false,
+            image: '',
+            color: '',
+            opacity: 0.9
+        },
+        bookmarks: {
+            enabled: false,
+            image: '',
+            color: '',
+            opacity: 0.9
+        },
+        recentFiles: {
+            enabled: false,
+            image: '',
+            color: '',
+            opacity: 0.9
+        },
+        todos: {
+            enabled: false,
+            image: '',
+            color: '',
+            opacity: 0.9
+        }
+    }
 };

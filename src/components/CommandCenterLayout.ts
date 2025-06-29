@@ -52,6 +52,9 @@ export class CommandCenterLayout {
         
         // Initialize search widget
         this.initializeSearch();
+        
+        // Apply widget backgrounds after all widgets are created
+        this.applyWidgetBackgrounds();
     }
 
     private cleanup() {
@@ -768,6 +771,213 @@ export class CommandCenterLayout {
             this.container.style.removeProperty('--interactive-accent');
             this.container.style.removeProperty('--interactive-accent-hover');
             this.container.style.removeProperty('--text-accent');
+        }
+        
+        // Apply background customizations
+        this.applyBackgroundStyles();
+    }
+    
+    private applyBackgroundStyles() {
+        // Reset background styles
+        this.container.style.backgroundImage = '';
+        this.container.style.backgroundColor = '';
+        
+        // Apply background color if set
+        if (this.plugin.settings.backgroundColor) {
+            this.container.style.backgroundColor = this.plugin.settings.backgroundColor;
+        }
+        
+        // Apply background image if set
+        if (this.plugin.settings.backgroundImage) {
+            const imageUrl = this.processImageUrl(this.plugin.settings.backgroundImage);
+            this.container.style.backgroundImage = `url('${imageUrl}')`;
+            this.container.style.backgroundSize = 'cover';
+            this.container.style.backgroundPosition = 'center';
+            this.container.style.backgroundRepeat = 'no-repeat';
+            
+            // Apply overlay if enabled
+            if (this.plugin.settings.backgroundOverlay) {
+                // Create overlay element if it doesn't exist
+                let overlay = this.container.querySelector('.homepage-background-overlay') as HTMLElement;
+                if (!overlay) {
+                    overlay = this.container.createDiv({ cls: 'homepage-background-overlay' });
+                    overlay.style.position = 'absolute';
+                    overlay.style.top = '0';
+                    overlay.style.left = '0';
+                    overlay.style.right = '0';
+                    overlay.style.bottom = '0';
+                    overlay.style.pointerEvents = 'none';
+                    overlay.style.zIndex = '0';
+                    
+                    // Ensure all content is above the overlay
+                    const sections = this.container.querySelectorAll('.header-section, .search-section, .quickactions-section, .bookmarks-section, .recent-section, .todos-section');
+                    sections.forEach(section => {
+                        (section as HTMLElement).style.position = 'relative';
+                        (section as HTMLElement).style.zIndex = '1';
+                    });
+                }
+                
+                // Apply overlay with opacity
+                const opacity = this.plugin.settings.backgroundOverlayOpacity;
+                overlay.style.backgroundColor = `rgba(0, 0, 0, ${opacity})`;
+            } else {
+                // Remove overlay if it exists
+                const overlay = this.container.querySelector('.homepage-background-overlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+            }
+        }
+    }
+    
+    private processImageUrl(url: string): string {
+        // Handle vault-relative paths
+        if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('data:')) {
+            // This is a vault path
+            const file = this.plugin.app.vault.getAbstractFileByPath(url);
+            if (file) {
+                // Convert to resource URL
+                return this.plugin.app.vault.getResourcePath(file as any);
+            }
+        }
+        return url;
+    }
+    
+    private applyOpacityToColor(color: string, opacity: number): string {
+        // If the color is already in rgba format, extract and replace alpha
+        if (color.startsWith('rgba(')) {
+            const rgbaMatch = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*[\d.]+\)/);
+            if (rgbaMatch) {
+                const [, r, g, b] = rgbaMatch;
+                return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+            }
+        }
+        
+        // If the color is in rgb format, convert to rgba
+        if (color.startsWith('rgb(')) {
+            const rgbMatch = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (rgbMatch) {
+                const [, r, g, b] = rgbMatch;
+                return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+            }
+        }
+        
+        // If the color is a hex value, convert to rgba
+        if (color.startsWith('#')) {
+            const hex = color.replace('#', '');
+            let r: number, g: number, b: number;
+            
+            if (hex.length === 3) {
+                r = parseInt(hex[0] + hex[0], 16);
+                g = parseInt(hex[1] + hex[1], 16);
+                b = parseInt(hex[2] + hex[2], 16);
+            } else if (hex.length === 6) {
+                r = parseInt(hex.substring(0, 2), 16);
+                g = parseInt(hex.substring(2, 4), 16);
+                b = parseInt(hex.substring(4, 6), 16);
+            } else {
+                // Invalid hex, return as is
+                return color;
+            }
+            
+            return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+        }
+        
+        // For CSS variables or named colors, use color-mix if modern browsers support it
+        // Fallback: use the color as-is
+        return color;
+    }
+    
+    private applyWidgetBackgrounds() {
+        // Apply backgrounds to each widget section
+        const widgetMappings = [
+            { selector: '.search-section', key: 'search' as const },
+            { selector: '.quickactions-section', key: 'quickActions' as const },
+            { selector: '.bookmarks-section', key: 'bookmarks' as const },
+            { selector: '.recent-section', key: 'recentFiles' as const },
+            { selector: '.todos-section', key: 'todos' as const }
+        ];
+        
+        widgetMappings.forEach(({ selector, key }) => {
+            const section = this.container.querySelector(selector) as HTMLElement;
+            if (section) {
+                this.applyWidgetBackground(section, key);
+            }
+        });
+    }
+    
+    private applyWidgetBackground(element: HTMLElement, widgetKey: keyof typeof this.plugin.settings.widgetBackgrounds) {
+        // Safety check for missing widgetBackgrounds settings
+        if (!this.plugin.settings.widgetBackgrounds) {
+            return;
+        }
+        
+        const settings = this.plugin.settings.widgetBackgrounds[widgetKey];
+        
+        if (!settings) {
+            return;
+        }
+        
+        // Remove any existing widget background elements and styles
+        element.classList.remove('has-widget-background');
+        const existingBg = element.querySelector('.widget-background-overlay');
+        if (existingBg) {
+            existingBg.remove();
+        }
+        element.style.backgroundImage = '';
+        element.style.backgroundColor = '';
+        element.removeAttribute('data-has-image');
+        element.style.removeProperty('--widget-bg-opacity');
+        element.style.removeProperty('--widget-bg-image');
+        
+        if (settings.enabled) {
+            element.classList.add('has-widget-background');
+            
+            // Create a background overlay element
+            const bgOverlay = element.createDiv({ cls: 'widget-background-overlay' });
+            bgOverlay.style.position = 'absolute';
+            bgOverlay.style.top = '0';
+            bgOverlay.style.left = '0';
+            bgOverlay.style.right = '0';
+            bgOverlay.style.bottom = '0';
+            bgOverlay.style.pointerEvents = 'none';
+            bgOverlay.style.zIndex = '0';
+            bgOverlay.style.borderRadius = 'var(--radius-m)';
+            
+            // Apply background image if set
+            if (settings.image) {
+                const imageUrl = this.processImageUrl(settings.image);
+                
+                bgOverlay.style.backgroundImage = `url('${imageUrl}')`;
+                bgOverlay.style.backgroundSize = 'cover';
+                bgOverlay.style.backgroundPosition = 'center';
+                bgOverlay.style.backgroundRepeat = 'no-repeat';
+                bgOverlay.style.opacity = settings.opacity.toString();
+                
+                element.setAttribute('data-has-image', 'true');
+            } 
+            // Apply background color if no image and color is set
+            else if (settings.color) {
+                element.removeAttribute('data-has-image');
+                
+                // Apply color with opacity
+                const backgroundColor = this.applyOpacityToColor(settings.color, settings.opacity);
+                bgOverlay.style.backgroundColor = backgroundColor;
+            } else {
+                bgOverlay.remove(); // Remove the overlay if no background is set
+            }
+            
+            // Ensure the parent element supports absolute positioning
+            element.style.position = 'relative';
+            
+            // Ensure all content is above the background
+            const children = Array.from(element.children) as HTMLElement[];
+            children.forEach(child => {
+                if (child !== bgOverlay) {
+                    child.style.position = 'relative';
+                    child.style.zIndex = '1';
+                }
+            });
         }
     }
 

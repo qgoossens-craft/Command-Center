@@ -77,7 +77,14 @@ export class CommandCenterPlugin extends Plugin {
     }
 
     async loadSettings() {
-        this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+        const loadedData = await this.loadData();
+        this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+        
+        // Ensure widgetBackgrounds exists for migration compatibility
+        if (!this.settings.widgetBackgrounds) {
+            this.settings.widgetBackgrounds = DEFAULT_SETTINGS.widgetBackgrounds;
+            await this.saveSettings();
+        }
     }
 
     async saveSettings() {

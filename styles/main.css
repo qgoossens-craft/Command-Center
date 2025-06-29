@@ -7,6 +7,76 @@
     width: 100%;
     overflow-y: auto;
     background: var(--background-primary);
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Background overlay for better text readability */
+.homepage-background-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Widget background styles */
+.has-widget-background {
+    position: relative;
+    border-radius: var(--radius-m);
+    overflow: hidden;
+}
+
+/* Background overlay element for widget backgrounds */
+.widget-background-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+    border-radius: var(--radius-m);
+}
+
+.has-widget-background > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure text remains readable on widget backgrounds */
+.has-widget-background .section-title {
+    background: var(--background-primary);
+    background: color-mix(in srgb, var(--background-primary) 90%, transparent);
+    padding: var(--size-4-2) var(--size-4-3);
+    border-radius: var(--radius-s);
+    margin-bottom: var(--size-4-3);
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.has-widget-background .file-item,
+.has-widget-background .cc-action-btn,
+.has-widget-background .task-item {
+    background: var(--background-secondary);
+    background: color-mix(in srgb, var(--background-secondary) 90%, transparent);
+    backdrop-filter: blur(4px);
+    border-radius: var(--radius-s);
+    margin-bottom: var(--size-4-1);
+    border: 1px solid var(--background-modifier-border);
+}
+
+.has-widget-background .search-container {
+    background: var(--background-primary);
+    background: color-mix(in srgb, var(--background-primary) 95%, transparent);
+    backdrop-filter: blur(8px);
+    border-radius: var(--radius-m);
+    padding: var(--size-4-3);
+    border: 1px solid var(--background-modifier-border);
 }
 
 /* Grid layout system following research pattern - DEFAULT PRESET */
@@ -22,8 +92,8 @@
     padding: var(--size-4-4);
     min-height: 100vh;
     box-sizing: border-box;
-    /* DEBUG: Add visible background to test if CSS is working */
-    background: linear-gradient(135deg, var(--background-primary) 0%, var(--background-secondary) 100%);
+    position: relative;
+    z-index: 1;
 }
 
 /* LAYOUT PRESETS */
@@ -39,7 +109,6 @@
     grid-template-rows: auto auto auto 1fr;
     max-width: 800px;
     margin: 0 auto;
-    background: linear-gradient(135deg, var(--background-primary) 0%, var(--background-secondary) 100%);
     border-radius: var(--radius-l);
     padding: var(--size-4-6);
 }
@@ -70,8 +139,6 @@
     grid-template-columns: 250px 1fr 1fr 250px;
     grid-template-rows: auto 1fr;
     gap: var(--size-4-2);
-    background: var(--background-secondary);
-    border: 2px solid var(--background-modifier-border);
 }
 
 .preset-dashboard .search-section {
@@ -310,48 +377,36 @@
     padding-bottom: var(--size-4-2);
 }
 
-/* Action buttons grid */
-.actions-grid {
-    display: flex;
-    flex-direction: column;
-    gap: var(--size-4-2);
-}
+/* Actions grid specific properties (base layout now in unified section) */
 
+/* Action button specific properties */
 .cc-action-btn {
-    display: flex;
-    align-items: center;
-    gap: var(--size-4-3);
-    padding: var(--size-4-3) var(--size-4-4);
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-s);
-    cursor: pointer;
-    transition: all 0.2s ease;
     font-family: var(--font-interface);
     color: var(--text-normal);
     text-align: left;
     width: 100%;
 }
 
-.cc-action-btn:hover {
-    background: var(--background-modifier-hover);
-    border-color: var(--text-accent);
-    transform: translateX(4px);
+/* Standardized icons for all widget items */
+.cc-action-icon,
+.file-icon,
+.todo-checkbox,
+.bookmark-icon {
+    font-size: var(--font-ui-large) !important;
+    flex-shrink: 0 !important;
+    width: 20px !important;
+    height: 20px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: none !important; /* Override any bookmark icon background */
+    border-radius: 0 !important; /* Remove any special bookmark icon styling */
 }
 
-.cc-action-icon {
-    font-size: var(--font-ui-large);
-    flex-shrink: 0;
-}
-
-.cc-action-label {
-    font-size: var(--font-ui-medium);
-    font-weight: 500;
-    flex: 1;
-}
-
-/* Recent files list */
-.recent-list {
+/* Widget lists - standardized spacing */
+.recent-list,
+.todo-list,
+.actions-grid {
     display: flex;
     flex-direction: column;
     gap: var(--size-4-2);
@@ -359,41 +414,26 @@
     max-height: 400px;
 }
 
-.file-item {
-    display: flex;
-    align-items: center;
-    gap: var(--size-4-3);
-    padding: var(--size-4-3);
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-s);
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.file-item:hover {
-    background: var(--background-modifier-hover);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-s);
-}
-
-.file-icon {
-    font-size: var(--font-ui-medium);
-    flex-shrink: 0;
-}
+/* File item specific properties (base styles now in unified section) */
 
 .file-info {
     flex: 1;
     min-width: 0;
 }
 
-.file-name {
-    font-weight: 500;
-    color: var(--text-normal);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: var(--font-ui-medium);
+/* Standardized text content for all widget items */
+.file-name,
+.cc-action-label,
+.todo-text,
+.bookmark-name {
+    font-weight: 500 !important;
+    color: var(--text-normal) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: var(--font-ui-medium) !important;
+    flex: 1 !important;
+    text-align: left !important; /* Override any center alignment for bookmarks */
 }
 
 .file-time {
@@ -410,6 +450,62 @@
     background: var(--background-primary);
     border-radius: var(--radius-s);
     border: 1px dashed var(--background-modifier-border);
+}
+
+/* UNIFIED WIDGET ITEM STYLES */
+/* Standardize all widget items to have consistent sizing and appearance */
+.widget-item {
+    display: flex;
+    align-items: center;
+    gap: var(--size-4-3);
+    padding: var(--size-4-3) var(--size-4-4);
+    background: var(--background-primary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: var(--radius-s);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 40px; /* Consistent minimum height */
+    box-sizing: border-box;
+}
+
+.widget-item:hover {
+    background: var(--background-modifier-hover);
+    border-color: var(--text-accent);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-s);
+}
+
+/* Apply unified styling to all widget items */
+.file-item,
+.cc-action-btn,
+.todo-item,
+.bookmark-item {
+    display: flex !important;
+    align-items: center !important;
+    flex-direction: row !important; /* Override bookmark column layout */
+    gap: var(--size-4-3) !important;
+    padding: 12px 16px !important; /* Fixed padding for exact sizing */
+    background: var(--background-primary) !important;
+    border: 1px solid var(--background-modifier-border) !important;
+    border-radius: var(--radius-s) !important;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    height: 44px !important; /* Fixed height instead of min-height */
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-bottom: var(--size-4-2) !important;
+    font-size: var(--font-ui-medium) !important;
+    line-height: 1.2 !important; /* Tighter line height for consistency */
+}
+
+.file-item:hover,
+.cc-action-btn:hover,
+.todo-item:hover,
+.bookmark-item:hover {
+    background: var(--background-modifier-hover) !important;
+    border-color: var(--text-accent) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: var(--shadow-s) !important;
 }
 
 /* Enhanced Search Widget Styles */

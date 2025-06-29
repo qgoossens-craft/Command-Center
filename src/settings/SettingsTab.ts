@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice } from 'obsidian';
 import type { CommandCenterPlugin } from '../main';
 import type { CommandCenterSettings } from '../types/settings';
 import { PLUGIN_NAME } from '../constants';
@@ -93,22 +93,80 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Background Image
-        new Setting(visualEl)
+        const bgImageSetting = new Setting(visualEl)
             .setName('Background image')
-            .setDesc('URL or path to background image (leave empty for none)')
-            .addText(text => text
-                .setPlaceholder('https://example.com/image.jpg')
-                .setValue(this.plugin.settings.backgroundImage)
-                .onChange(async (value) => {
-                    this.plugin.settings.backgroundImage = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHomepage();
-                }));
+            .setDesc('Enter URL or upload an image from your device (overrides background color when set)');
+            
+        // Add text input for URL
+        bgImageSetting.addText(text => text
+            .setPlaceholder('https://example.com/image.jpg or vault path')
+            .setValue(this.plugin.settings.backgroundImage)
+            .onChange(async (value) => {
+                this.plugin.settings.backgroundImage = value;
+                await this.plugin.saveSettings();
+                this.plugin.refreshHomepage();
+            }));
+            
+        // Add upload button
+        bgImageSetting.addButton(button => button
+            .setButtonText('Upload')
+            .setTooltip('Upload image from your device')
+            .onClick(async () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.style.display = 'none';
+                
+                input.addEventListener('change', async (e) => {
+                    const target = e.target as HTMLInputElement;
+                    const file = target.files?.[0];
+                    
+                    if (file) {
+                        try {
+                            // Create a unique filename
+                            const fileName = `backgrounds/${Date.now()}-${file.name}`;
+                            const folderPath = 'backgrounds';
+                            
+                            // Ensure the backgrounds folder exists
+                            if (!this.plugin.app.vault.getAbstractFileByPath(folderPath)) {
+                                await this.plugin.app.vault.createFolder(folderPath);
+                            }
+                            
+                            // Read the file as array buffer
+                            const arrayBuffer = await file.arrayBuffer();
+                            const buffer = Buffer.from(arrayBuffer);
+                            
+                            // Save to vault
+                            await this.plugin.app.vault.createBinary(fileName, buffer);
+                            
+                            // Update settings with the vault path
+                            this.plugin.settings.backgroundImage = fileName;
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                            
+                            // Update the text input to show the new path
+                            const textInput = bgImageSetting.components[0] as any;
+                            if (textInput?.inputEl) {
+                                textInput.setValue(fileName);
+                            }
+                            
+                            new Notice(`Background image uploaded to ${fileName}`);
+                        } catch (error) {
+                            console.error('Error uploading image:', error);
+                            new Notice('Failed to upload image: ' + error.message);
+                        }
+                    }
+                });
+                
+                document.body.appendChild(input);
+                input.click();
+                document.body.removeChild(input);
+            }));
 
         // Background Color
         new Setting(visualEl)
             .setName('Background color')
-            .setDesc('Background color (CSS format, e.g., #1e1e1e, rgb(30,30,30))')
+            .setDesc('Background color - only visible when no background image is set (CSS format, e.g., #1e1e1e, rgb(30,30,30))')
             .addText(text => text
                 .setPlaceholder('#1e1e1e')
                 .setValue(this.plugin.settings.backgroundColor)
@@ -504,6 +562,141 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                         this.plugin.refreshHomepage();
                     }));
         }
+
+        // Widget Backgrounds Section
+        const widgetBackgroundsSection = new CollapsibleSection(
+            containerEl,
+            'Widget Backgrounds',
+            'Set individual backgrounds for each widget',
+            '🎨',
+            true
+        );
+        const widgetBackgroundsEl = widgetBackgroundsSection.getContentEl();
+
+        // Helper function to create widget background settings
+        const createWidgetBackgroundSettings = (
+            container: HTMLElement, 
+            widgetName: string, 
+            widgetKey: keyof typeof this.plugin.settings.widgetBackgrounds
+        ) => {
+            const widgetSettings = this.plugin.settings.widgetBackgrounds[widgetKey];
+            
+            // Enable background toggle
+            new Setting(container)
+                .setName(`Enable ${widgetName} background`)
+                .setDesc(`Use custom background for ${widgetName} widget`)
+                .addToggle(toggle => toggle
+                    .setValue(widgetSettings.enabled)
+                    .onChange(async (value) => {
+                        this.plugin.settings.widgetBackgrounds[widgetKey].enabled = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                        this.display(); // Refresh to show/hide settings
+                    }));
+            
+            if (widgetSettings.enabled) {
+                // Background image
+                const bgImageSetting = new Setting(container)
+                    .setName('Background image')
+                    .setDesc('URL or vault path (overrides color)');
+                    
+                bgImageSetting.addText(text => text
+                    .setPlaceholder('https://example.com/image.jpg or vault path')
+                    .setValue(widgetSettings.image)
+                    .onChange(async (value) => {
+                        this.plugin.settings.widgetBackgrounds[widgetKey].image = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+                    
+                bgImageSetting.addButton(button => button
+                    .setButtonText('Upload')
+                    .setTooltip('Upload image from your device')
+                    .onClick(async () => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.style.display = 'none';
+                        
+                        input.addEventListener('change', async (e) => {
+                            const target = e.target as HTMLInputElement;
+                            const file = target.files?.[0];
+                            
+                            if (file) {
+                                try {
+                                    const fileName = `widget-backgrounds/${widgetKey}-${Date.now()}-${file.name}`;
+                                    const folderPath = 'widget-backgrounds';
+                                    
+                                    if (!this.plugin.app.vault.getAbstractFileByPath(folderPath)) {
+                                        await this.plugin.app.vault.createFolder(folderPath);
+                                    }
+                                    
+                                    const arrayBuffer = await file.arrayBuffer();
+                                    const buffer = Buffer.from(arrayBuffer);
+                                    
+                                    await this.plugin.app.vault.createBinary(fileName, buffer);
+                                    
+                                    this.plugin.settings.widgetBackgrounds[widgetKey].image = fileName;
+                                    await this.plugin.saveSettings();
+                                    this.plugin.refreshHomepage();
+                                    
+                                    const textInput = bgImageSetting.components[0] as any;
+                                    if (textInput?.inputEl) {
+                                        textInput.setValue(fileName);
+                                    }
+                                    
+                                    new Notice(`Widget background uploaded to ${fileName}`);
+                                } catch (error) {
+                                    console.error('Error uploading widget background:', error);
+                                    new Notice('Failed to upload image: ' + error.message);
+                                }
+                            }
+                        });
+                        
+                        document.body.appendChild(input);
+                        input.click();
+                        document.body.removeChild(input);
+                    }));
+                
+                // Background color
+                new Setting(container)
+                    .setName('Background color')
+                    .setDesc('CSS color - only visible when no image is set')
+                    .addText(text => text
+                        .setPlaceholder('#1e1e1e or rgba(0,0,0,0.5)')
+                        .setValue(widgetSettings.color)
+                        .onChange(async (value) => {
+                            this.plugin.settings.widgetBackgrounds[widgetKey].color = value;
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                        }));
+                
+                // Background opacity
+                new Setting(container)
+                    .setName('Background opacity')
+                    .setDesc('Overall opacity of the widget background')
+                    .addSlider(slider => slider
+                        .setLimits(0, 1, 0.1)
+                        .setValue(widgetSettings.opacity)
+                        .setDynamicTooltip()
+                        .onChange(async (value) => {
+                            this.plugin.settings.widgetBackgrounds[widgetKey].opacity = value;
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                        }));
+            }
+        };
+
+        // Create settings for each widget
+        createWidgetBackgroundSettings(widgetBackgroundsEl, 'Search', 'search');
+        widgetBackgroundsEl.createEl('hr');
+        createWidgetBackgroundSettings(widgetBackgroundsEl, 'Quick Actions', 'quickActions');
+        widgetBackgroundsEl.createEl('hr');
+        createWidgetBackgroundSettings(widgetBackgroundsEl, 'Bookmarks', 'bookmarks');
+        widgetBackgroundsEl.createEl('hr');
+        createWidgetBackgroundSettings(widgetBackgroundsEl, 'Recent Files', 'recentFiles');
+        widgetBackgroundsEl.createEl('hr');
+        createWidgetBackgroundSettings(widgetBackgroundsEl, 'Tasks', 'todos');
 
         // Content Limits Section
         const contentLimitsSection = new CollapsibleSection(
