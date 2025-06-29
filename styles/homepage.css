@@ -1,0 +1,205 @@
+/* Command Center - Homepage Specific Styles */
+
+/* Enhanced Layout presets */
+.command-center-homepage[data-layout="minimal"] .command-center-content {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.command-center-homepage[data-layout="minimal"] .command-center-widgets {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+    margin: 0 auto;
+    gap: var(--size-4-6);
+}
+
+.command-center-homepage[data-layout="dashboard"] .command-center-widgets {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--size-4-3);
+}
+
+.command-center-homepage[data-layout="dashboard"] .command-center-header {
+    margin-bottom: var(--size-4-6);
+}
+
+.command-center-homepage[data-layout="productivity"] .command-center-widgets {
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: var(--size-4-5);
+}
+
+.command-center-homepage[data-layout="productivity"] .command-center-content {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Custom column layouts */
+.command-center-widgets[data-columns="1"] {
+    grid-template-columns: 1fr;
+}
+
+.command-center-widgets[data-columns="2"] {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.command-center-widgets[data-columns="3"] {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.command-center-widgets[data-columns="4"] {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.command-center-widgets[data-columns="5"] {
+    grid-template-columns: repeat(5, 1fr);
+}
+
+/* Enhanced Background image overlay system */
+.command-center-content.has-background-image {
+    position: relative;
+}
+
+.background-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.3s ease;
+}
+
+.command-center-content.has-background-image > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Enhanced styling for content over background images */
+.command-center-content.has-background-image .command-center-title {
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.command-center-content.has-background-image .command-center-greeting {
+    color: #ffffff;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+.command-center-content.has-background-image .command-center-datetime-main {
+    color: #ffffff;
+}
+
+.command-center-content.has-background-image .command-center-date,
+.command-center-content.has-background-image .command-center-time {
+    color: #ffffff;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.command-center-content.has-background-image .time-info-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    backdrop-filter: blur(10px);
+}
+
+.command-center-content.has-background-image .time-info-item:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Widget adjustments for background images */
+.command-center-content.has-background-image .command-center-widget {
+    background: rgba(var(--background-secondary-rgb), 0.95);
+    backdrop-filter: blur(10px);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.command-center-content.has-background-image .command-center-widget:hover {
+    background: rgba(var(--background-secondary-rgb), 0.98);
+}
+
+/* Enhanced Widget styling variations */
+.command-center-widget.widget-primary {
+    border-color: var(--interactive-accent);
+    border-width: 2px;
+    box-shadow: 0 0 0 1px var(--interactive-accent-hover);
+}
+
+.command-center-widget.widget-large {
+    grid-column: span 2;
+    min-height: 300px;
+}
+
+.command-center-widget.widget-tall {
+    grid-row: span 2;
+    min-height: 400px;
+}
+
+.command-center-widget.widget-full {
+    grid-column: 1 / -1;
+}
+
+.command-center-widget.widget-compact {
+    padding: var(--size-4-2) var(--size-4-3);
+}
+
+.command-center-widget.widget-compact .command-center-widget-header {
+    margin-bottom: var(--size-4-2);
+    padding-bottom: var(--size-4-1);
+}
+
+/* Widget size classes */
+.command-center-widget.size-small {
+    min-height: 150px;
+}
+
+.command-center-widget.size-medium {
+    min-height: 250px;
+}
+
+.command-center-widget.size-large {
+    min-height: 350px;
+}
+
+/* Future widget type styles */
+.command-center-widget.widget-search {
+    background: var(--background-primary);
+}
+
+.command-center-widget.widget-bookmarks {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.command-center-widget.widget-stats {
+    background: linear-gradient(135deg, var(--background-secondary) 0%, var(--background-secondary-alt) 100%);
+}
+
+.command-center-widget.widget-quote {
+    text-align: center;
+    font-style: italic;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .command-center-homepage[data-layout="productivity"] .command-center-widgets,
+    .command-center-widgets[data-columns="2"],
+    .command-center-widgets[data-columns="3"],
+    .command-center-widgets[data-columns="4"],
+    .command-center-widgets[data-columns="5"] {
+        grid-template-columns: 1fr;
+    }
+    
+    .command-center-widget.widget-large,
+    .command-center-widget.widget-full {
+        grid-column: span 1;
+    }
+}
+
+/* Tablet optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .command-center-widgets[data-columns="4"],
+    .command-center-widgets[data-columns="5"] {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
