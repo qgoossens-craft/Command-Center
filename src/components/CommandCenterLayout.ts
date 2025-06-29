@@ -1,5 +1,6 @@
 import { EnhancedSearchWidget } from '../widgets/EnhancedSearchWidget';
 import { TodoWidget } from '../widgets/TodoWidget';
+import { PinnedNotesWidget } from '../widgets/PinnedNotesWidget';
 import { DateTimeUtil } from '../utils/dateTime';
 import type { CommandCenterPlugin } from '../main';
 import type { TFile } from 'obsidian';
@@ -10,6 +11,7 @@ export class CommandCenterLayout {
     private container: HTMLElement;
     private searchWidget: EnhancedSearchWidget | null = null;
     private todoWidget: TodoWidget | null = null;
+    private pinnedNotesWidget: PinnedNotesWidget | null = null;
 
     constructor(plugin: CommandCenterPlugin, container: HTMLElement) {
         this.plugin = plugin;
@@ -66,6 +68,11 @@ export class CommandCenterLayout {
         if (this.todoWidget) {
             this.todoWidget.destroy();
             this.todoWidget = null;
+        }
+        
+        if (this.pinnedNotesWidget) {
+            this.pinnedNotesWidget.destroy();
+            this.pinnedNotesWidget = null;
         }
         
         // Clear all content from container but preserve classes
@@ -242,6 +249,12 @@ export class CommandCenterLayout {
         // Search widget container
         const searchContainer = searchSection.createDiv({ cls: 'search-container' });
         this.searchWidget = new EnhancedSearchWidget(this.plugin, searchContainer);
+        
+        // Add pinned notes below search if enabled
+        if (this.plugin.settings.showPinnedNotes) {
+            const pinnedContainer = searchSection.createDiv({ cls: 'pinned-notes-container' });
+            this.pinnedNotesWidget = new PinnedNotesWidget(this.plugin, pinnedContainer);
+        }
     }
 
     private createQuickActions() {
@@ -569,14 +582,8 @@ export class CommandCenterLayout {
     private showVaultStats() {
         const files = this.plugin.app.vault.getMarkdownFiles();
         const totalFiles = files.length;
-        const totalWords = files.reduce((acc, file) => {
-            // This is a simple estimation - for exact word count, we'd need to read each file
-            return acc + Math.floor(file.stat.size / 5); // Rough estimate: 5 chars per word
-        }, 0);
-        
         const message = `📊 Vault Statistics:\n\n` +
                        `📄 Total Files: ${totalFiles}\n` +
-                       `📝 Estimated Words: ${totalWords.toLocaleString()}\n` +
                        `💾 Vault Size: ${this.formatBytes(files.reduce((acc, file) => acc + file.stat.size, 0))}`;
         
         new Notice(message, 5000);

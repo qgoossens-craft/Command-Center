@@ -226,7 +226,7 @@ export class EnhancedSearchWidget extends Component {
         if (!query) return;
         
         // Check if web viewer plugin is enabled
-        const webViewerPlugin = this.plugin.app.internalPlugins.plugins.websocket;
+        const webViewerPlugin = (this.plugin.app as any).internalPlugins?.plugins?.websocket;
         if (!webViewerPlugin || !webViewerPlugin.enabled) {
             // Fallback: open in system browser
             const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
@@ -249,7 +249,7 @@ export class EnhancedSearchWidget extends Component {
         if (!query) return;
         
         // Check if web viewer plugin is enabled
-        const webViewerPlugin = this.plugin.app.internalPlugins.plugins.websocket;
+        const webViewerPlugin = (this.plugin.app as any).internalPlugins?.plugins?.websocket;
         if (!webViewerPlugin || !webViewerPlugin.enabled) {
             // Fallback: open in system browser
             const wikiUrl = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(query)}`;

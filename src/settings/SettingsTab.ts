@@ -1,6 +1,8 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type { CommandCenterPlugin } from '../main';
+import type { CommandCenterSettings } from '../types/settings';
 import { PLUGIN_NAME } from '../constants';
+import { CollapsibleSection } from '../utils/CollapsibleSection';
 
 export class CommandCenterSettingsTab extends PluginSettingTab {
     plugin: CommandCenterPlugin;
@@ -21,10 +23,17 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         containerEl.createEl('h2', { text: `${PLUGIN_NAME} Settings` });
 
         // General Settings Section
-        containerEl.createEl('h3', { text: 'General Settings' });
-
+        const generalSection = new CollapsibleSection(
+            containerEl,
+            'General Settings',
+            'Basic configuration options for your homepage',
+            '⚙️',
+            false
+        );
+        const generalEl = generalSection.getContentEl();
+        
         // Custom Title
-        new Setting(containerEl)
+        new Setting(generalEl)
             .setName('Homepage Title')
             .setDesc('The main title displayed on your homepage')
             .addText(text => text
@@ -37,7 +46,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Custom Message
-        new Setting(containerEl)
+        new Setting(generalEl)
             .setName('Custom Message')
             .setDesc('Custom message to display instead of title (leave empty to show title)')
             .addText(text => text
@@ -50,7 +59,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Open on Startup
-        new Setting(containerEl)
+        new Setting(generalEl)
             .setName('Open on startup')
             .setDesc('Automatically open the homepage when Obsidian starts')
             .addToggle(toggle => toggle
@@ -61,10 +70,17 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Visual Settings Section
-        containerEl.createEl('h3', { text: 'Visual Settings' });
+        const visualSection = new CollapsibleSection(
+            containerEl,
+            'Visual Settings',
+            'Customize the appearance and background of your homepage',
+            '🎨',
+            true
+        );
+        const visualEl = visualSection.getContentEl();
 
         // Title Font Size
-        new Setting(containerEl)
+        new Setting(visualEl)
             .setName('Title font size')
             .setDesc('Size of the main title (e.g., 2em, 3em, 48px)')
             .addText(text => text
@@ -77,7 +93,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Background Image
-        new Setting(containerEl)
+        new Setting(visualEl)
             .setName('Background image')
             .setDesc('URL or path to background image (leave empty for none)')
             .addText(text => text
@@ -90,7 +106,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Background Color
-        new Setting(containerEl)
+        new Setting(visualEl)
             .setName('Background color')
             .setDesc('Background color (CSS format, e.g., #1e1e1e, rgb(30,30,30))')
             .addText(text => text
@@ -103,7 +119,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Background Overlay
-        new Setting(containerEl)
+        new Setting(visualEl)
             .setName('Background overlay')
             .setDesc('Add a dark overlay over background images for better text readability')
             .addToggle(toggle => toggle
@@ -115,7 +131,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Overlay Opacity
-        new Setting(containerEl)
+        new Setting(visualEl)
             .setName('Overlay opacity')
             .setDesc('Strength of the background overlay (0 = transparent, 1 = opaque)')
             .addSlider(slider => slider
@@ -129,10 +145,17 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Banner Settings Section
-        containerEl.createEl('h3', { text: 'Banner Settings' });
+        const bannerSection = new CollapsibleSection(
+            containerEl,
+            'Banner Settings',
+            'Configure banner images and text overlays',
+            '🖼️',
+            true
+        );
+        const bannerEl = bannerSection.getContentEl();
 
         // Show Banner
-        new Setting(containerEl)
+        new Setting(bannerEl)
             .setName('Show banner')
             .setDesc('Display a banner at the top of the homepage, behind the title')
             .addToggle(toggle => toggle
@@ -147,7 +170,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         // Banner settings (only show if banner is enabled)
         if (this.plugin.settings.showBanner) {
             // Banner Text
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Banner text')
                 .setDesc('Text to display on the banner (leave empty for image-only banner)')
                 .addText(text => text
@@ -160,7 +183,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Banner Image
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Banner image')
                 .setDesc('URL or path to banner background image (leave empty for text-only banner)')
                 .addText(text => text
@@ -173,7 +196,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Banner Height
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Banner height')
                 .setDesc('Height of the banner (e.g., 200px, 15vh, 10em)')
                 .addText(text => text
@@ -186,7 +209,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Banner Opacity
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Banner opacity')
                 .setDesc('Opacity of the banner background (0 = transparent, 1 = opaque)')
                 .addSlider(slider => slider
@@ -199,11 +222,8 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                         this.plugin.refreshHomepage();
                     }));
 
-            // Advanced Banner Settings Section
-            containerEl.createEl('h4', { text: 'Advanced Banner Settings', cls: 'setting-item-heading' });
-
             // Text Position
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Text position')
                 .setDesc('Position of the text within the banner')
                 .addDropdown(dropdown => dropdown
@@ -226,7 +246,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Text Size
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Text size')
                 .setDesc('Size of the banner text')
                 .addDropdown(dropdown => dropdown
@@ -255,7 +275,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
             // Custom text size input (only show if custom is selected)
             if (this.plugin.settings.bannerTextSize === 'custom' || 
                 !['var(--font-ui-small)', 'var(--font-ui-medium)', 'var(--font-ui-large)', 'var(--font-ui-larger)', '1.5em', '2em', '2.5em', '3em'].includes(this.plugin.settings.bannerTextSize)) {
-                new Setting(containerEl)
+                new Setting(bannerEl)
                     .setName('Custom text size')
                     .setDesc('Custom size value (e.g., 1.8em, 24px, large)')
                     .addText(text => text
@@ -269,10 +289,10 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
             }
 
             // Text Color - use the new createColorPaletteSetting method
-            this.createBannerColorPaletteSetting(containerEl, 'Text color', 'Choose a color for the banner text', 'bannerTextColor');
+            this.createBannerColorPaletteSetting(bannerEl, 'Text color', 'Choose a color for the banner text', 'bannerTextColor');
 
             // Text Shadow
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Text shadow')
                 .setDesc('Add shadow effect to banner text for better readability')
                 .addToggle(toggle => toggle
@@ -284,7 +304,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Image Fit
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Image fit')
                 .setDesc('How the background image should fit within the banner')
                 .addDropdown(dropdown => dropdown
@@ -302,7 +322,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Image Position
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Image position')
                 .setDesc('Position of the background image within the banner')
                 .addDropdown(dropdown => dropdown
@@ -325,7 +345,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Overlay Color
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Overlay color')
                 .setDesc('Color of the overlay behind text (e.g., #000000, rgb(0,0,0))')
                 .addText(text => text
@@ -338,7 +358,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Overlay Opacity
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Overlay opacity')
                 .setDesc('Opacity of the text overlay background (0 = transparent, 1 = opaque)')
                 .addSlider(slider => slider
@@ -352,7 +372,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Image Blur
-            new Setting(containerEl)
+            new Setting(bannerEl)
                 .setName('Image blur')
                 .setDesc('Blur effect for the background image (0 = no blur, 10 = heavy blur)')
                 .addSlider(slider => slider
@@ -367,10 +387,17 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         }
 
         // Layout Settings Section
-        containerEl.createEl('h3', { text: 'Layout Settings' });
+        const layoutSection = new CollapsibleSection(
+            containerEl,
+            'Layout Settings',
+            'Configure layout presets and widget arrangement',
+            '⚡',
+            true
+        );
+        const layoutEl = layoutSection.getContentEl();
 
         // Layout Preset
-        new Setting(containerEl)
+        new Setting(layoutEl)
             .setName('Layout preset')
             .setDesc('Choose a predefined layout style that affects widget arrangement')
             .addDropdown(dropdown => dropdown
@@ -388,7 +415,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Widget Columns
-        new Setting(containerEl)
+        new Setting(layoutEl)
             .setName('Widget columns')
             .setDesc('Number of columns for widget layout (overridden by layout presets)')
             .addSlider(slider => slider
@@ -402,14 +429,17 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Widget Visibility Section
-        containerEl.createEl('h3', { text: 'Widget Visibility' });
-        containerEl.createEl('p', { 
-            text: 'Control which widgets appear on your homepage (widgets will be available in future phases)',
-            cls: 'setting-item-description'
-        });
+        const widgetVisibilitySection = new CollapsibleSection(
+            containerEl,
+            'Widget Visibility',
+            'Control which widgets appear on your homepage (widgets will be available in future phases)',
+            '📊',
+            true
+        );
+        const widgetVisibilityEl = widgetVisibilitySection.getContentEl();
 
         // Show Search
-        new Setting(containerEl)
+        new Setting(widgetVisibilityEl)
             .setName('Show search widget')
             .setDesc('Display universal search bar with file search and quick actions')
             .addToggle(toggle => toggle
@@ -421,7 +451,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Show Bookmarks
-        new Setting(containerEl)
+        new Setting(widgetVisibilityEl)
             .setName('Show bookmarks widget')
             .setDesc('Display bookmarks and starred files')
             .addToggle(toggle => toggle
@@ -433,7 +463,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Show Recent Files
-        new Setting(containerEl)
+        new Setting(widgetVisibilityEl)
             .setName('Show recent files widget')
             .setDesc('Display recently modified files')
             .addToggle(toggle => toggle
@@ -443,12 +473,50 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.refreshHomepage();
                 }));
+                
+        // Show Pinned Notes
+        new Setting(widgetVisibilityEl)
+            .setName('Show pinned notes')
+            .setDesc('Display pinned notes containers below search')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showPinnedNotes)
+                .onChange(async (value) => {
+                    this.plugin.settings.showPinnedNotes = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                    this.display(); // Refresh to show/hide related settings
+                }));
+                
+        // Pinned Notes View Mode (only show if pinned notes are enabled)
+        if (this.plugin.settings.showPinnedNotes) {
+            new Setting(widgetVisibilityEl)
+                .setName('Pinned notes view mode')
+                .setDesc('Display pinned notes as list or gallery')
+                .addDropdown(dropdown => dropdown
+                    .addOptions({
+                        'list': 'List View',
+                        'gallery': 'Gallery View'
+                    })
+                    .setValue(this.plugin.settings.pinnedNotesViewMode)
+                    .onChange(async (value: 'list' | 'gallery') => {
+                        this.plugin.settings.pinnedNotesViewMode = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+        }
 
         // Content Limits Section
-        containerEl.createEl('h3', { text: 'Content Limits' });
+        const contentLimitsSection = new CollapsibleSection(
+            containerEl,
+            'Content Limits',
+            'Set maximum number of items to display in each widget',
+            '🔢',
+            true
+        );
+        const contentLimitsEl = contentLimitsSection.getContentEl();
 
         // Max Recent Files
-        new Setting(containerEl)
+        new Setting(contentLimitsEl)
             .setName('Max recent files')
             .setDesc('Maximum number of recent files to display')
             .addSlider(slider => slider
@@ -462,7 +530,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Max Bookmarks
-        new Setting(containerEl)
+        new Setting(contentLimitsEl)
             .setName('Max bookmarks')
             .setDesc('Maximum number of bookmarks to display')
             .addSlider(slider => slider
@@ -476,7 +544,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Max Todos
-        new Setting(containerEl)
+        new Setting(contentLimitsEl)
             .setName('Max todos')
             .setDesc('Maximum number of todos to display')
             .addSlider(slider => slider
@@ -490,10 +558,17 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Section Names Section
-        containerEl.createEl('h3', { text: 'Section Names' });
+        const sectionNamesSection = new CollapsibleSection(
+            containerEl,
+            'Section Names',
+            'Customize the titles displayed for each widget section',
+            '🏷️',
+            true
+        );
+        const sectionNamesEl = sectionNamesSection.getContentEl();
 
         // Search Section Title
-        new Setting(containerEl)
+        new Setting(sectionNamesEl)
             .setName('Search section title')
             .setDesc('Title for the search section')
             .addText(text => text
@@ -506,7 +581,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Quick Actions Section Title
-        new Setting(containerEl)
+        new Setting(sectionNamesEl)
             .setName('Quick actions section title')
             .setDesc('Title for the quick actions section')
             .addText(text => text
@@ -519,7 +594,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Bookmarks Section Title
-        new Setting(containerEl)
+        new Setting(sectionNamesEl)
             .setName('Bookmarks section title')
             .setDesc('Title for the bookmarks section')
             .addText(text => text
@@ -532,7 +607,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Recent Files Section Title
-        new Setting(containerEl)
+        new Setting(sectionNamesEl)
             .setName('Recent files section title')
             .setDesc('Title for the recent files section')
             .addText(text => text
@@ -545,7 +620,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Todos Section Title
-        new Setting(containerEl)
+        new Setting(sectionNamesEl)
             .setName('Todos section title')
             .setDesc('Title for the todos section')
             .addText(text => text
@@ -558,10 +633,17 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Todo Settings Section
-        containerEl.createEl('h3', { text: 'Todo Settings' });
+        const todoSettingsSection = new CollapsibleSection(
+            containerEl,
+            'Todo Settings',
+            'Configure task parsing, source files, and cleanup options',
+            '✅',
+            true
+        );
+        const todoSettingsEl = todoSettingsSection.getContentEl();
 
         // Todo Parse Mode
-        new Setting(containerEl)
+        new Setting(todoSettingsEl)
             .setName('Task parsing mode')
             .setDesc('Parse tasks from entire vault or a single file')
             .addDropdown(dropdown => dropdown
@@ -577,7 +659,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
 
         // Todo Source File (only show in single-file mode)
         if (this.plugin.settings.todoParseMode === 'single-file') {
-            new Setting(containerEl)
+            new Setting(todoSettingsEl)
                 .setName('Task source file')
                 .setDesc('File to read tasks from (e.g., Tasks.md)')
                 .addText(text => text
@@ -591,7 +673,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         }
 
         // Default Todo File (for new tasks)
-        new Setting(containerEl)
+        new Setting(todoSettingsEl)
             .setName('Default task file')
             .setDesc('File where new tasks are added when in vault mode')
             .addText(text => text
@@ -603,7 +685,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Auto Cleanup Completed Tasks
-        new Setting(containerEl)
+        new Setting(todoSettingsEl)
             .setName('Auto-cleanup completed tasks')
             .setDesc('Automatically remove completed tasks after a specified number of days (0 = immediately)')
             .addToggle(toggle => toggle
@@ -616,7 +698,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
 
         // Cleanup Delay Days (only show if auto-cleanup is enabled)
         if (this.plugin.settings.autoCleanupCompleted) {
-            new Setting(containerEl)
+            new Setting(todoSettingsEl)
                 .setName('Cleanup delay (days)')
                 .setDesc('Number of days to wait before removing completed tasks (0 = immediately)')
                 .addSlider(slider => slider
@@ -630,10 +712,17 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         }
 
         // Date & Time Settings Section
-        containerEl.createEl('h3', { text: 'Date & Time Settings' });
+        const dateTimeSection = new CollapsibleSection(
+            containerEl,
+            'Date & Time Settings',
+            'Customize date and time display formats and appearance',
+            '🗓️',
+            true
+        );
+        const dateTimeEl = dateTimeSection.getContentEl();
 
         // Date Format
-        new Setting(containerEl)
+        new Setting(dateTimeEl)
             .setName('Date format')
             .setDesc('Custom date format pattern (e.g., "EEEE, MMMM d, yyyy" for "Monday, January 1, 2024")')
             .addText(text => text
@@ -646,7 +735,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Add some common format examples
-        const dateExamples = containerEl.createDiv({ cls: 'setting-item-description' });
+        const dateExamples = dateTimeEl.createDiv({ cls: 'setting-item-description' });
         dateExamples.innerHTML = `
             <strong>Common patterns:</strong><br>
             • <code>EEEE, MMMM d, yyyy</code> → Monday, January 1, 2024<br>
@@ -657,7 +746,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         `;
 
         // Time Format
-        new Setting(containerEl)
+        new Setting(dateTimeEl)
             .setName('Time format')
             .setDesc('Custom time format pattern (e.g., "h:mm a" for "1:30 PM")')
             .addText(text => text
@@ -670,7 +759,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         // Add time format examples
-        const timeExamples = containerEl.createDiv({ cls: 'setting-item-description' });
+        const timeExamples = dateTimeEl.createDiv({ cls: 'setting-item-description' });
         timeExamples.innerHTML = `
             <strong>Common patterns:</strong><br>
             • <code>h:mm a</code> → 1:30 PM<br>
@@ -679,11 +768,8 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
             • <code>HH:mm:ss</code> → 13:30:45
         `;
 
-        // Date & Time Appearance Section
-        containerEl.createEl('h4', { text: 'Date & Time Appearance', cls: 'setting-item-heading' });
-
         // Show Date/Time
-        new Setting(containerEl)
+        new Setting(dateTimeEl)
             .setName('Show date & time')
             .setDesc('Display date and time in the header')
             .addToggle(toggle => toggle
@@ -698,7 +784,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         // Date/time settings (only show if date/time is enabled)
         if (this.plugin.settings.showDateTime) {
             // Position
-            new Setting(containerEl)
+            new Setting(dateTimeEl)
                 .setName('Position')
                 .setDesc('Position of date and time relative to the title')
                 .addDropdown(dropdown => dropdown
@@ -717,7 +803,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Layout
-            new Setting(containerEl)
+            new Setting(dateTimeEl)
                 .setName('Layout')
                 .setDesc('How date and time are arranged')
                 .addDropdown(dropdown => dropdown
@@ -734,7 +820,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Date Font Size
-            new Setting(containerEl)
+            new Setting(dateTimeEl)
                 .setName('Date size')
                 .setDesc('Font size for the date')
                 .addDropdown(dropdown => dropdown
@@ -756,7 +842,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Time Font Size
-            new Setting(containerEl)
+            new Setting(dateTimeEl)
                 .setName('Time size')
                 .setDesc('Font size for the time')
                 .addDropdown(dropdown => dropdown
@@ -778,13 +864,13 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Date Color
-            this.createColorPaletteSetting(containerEl, 'Date color', 'Choose color for the date text', 'dateColor');
+            this.createColorPaletteSetting(dateTimeEl, 'Date color', 'Choose color for the date text', 'dateColor');
 
             // Time Color
-            this.createColorPaletteSetting(containerEl, 'Time color', 'Choose color for the time text', 'timeColor');
+            this.createColorPaletteSetting(dateTimeEl, 'Time color', 'Choose color for the time text', 'timeColor');
 
             // Background
-            new Setting(containerEl)
+            new Setting(dateTimeEl)
                 .setName('Background')
                 .setDesc('Background style behind date/time')
                 .addDropdown(dropdown => dropdown
@@ -805,7 +891,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
 
             // Background Opacity
             if (this.plugin.settings.dateTimeBackground !== 'transparent') {
-                new Setting(containerEl)
+                new Setting(dateTimeEl)
                     .setName('Background opacity')
                     .setDesc('Opacity of the date/time background')
                     .addSlider(slider => slider
@@ -820,7 +906,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
             }
 
             // Text Shadow
-            new Setting(containerEl)
+            new Setting(dateTimeEl)
                 .setName('Text shadow')
                 .setDesc('Add shadow effect to date/time text')
                 .addToggle(toggle => toggle
@@ -832,7 +918,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     }));
 
             // Border
-            new Setting(containerEl)
+            new Setting(dateTimeEl)
                 .setName('Border')
                 .setDesc('Add border around date/time container')
                 .addToggle(toggle => toggle
@@ -845,10 +931,17 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         }
 
         // Theme Settings Section
-        containerEl.createEl('h3', { text: 'Theme Settings' });
+        const themeSection = new CollapsibleSection(
+            containerEl,
+            'Theme Settings',
+            'Customize colors and accent settings',
+            '🎨',
+            true
+        );
+        const themeEl = themeSection.getContentEl();
 
         // Use Obsidian Accent
-        new Setting(containerEl)
+        new Setting(themeEl)
             .setName('Use Obsidian accent color')
             .setDesc('Use Obsidian\'s accent color or set a custom one')
             .addToggle(toggle => toggle
@@ -862,7 +955,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
 
         // Custom Accent Color (only show if not using Obsidian accent)
         if (!this.plugin.settings.useObsidianAccent) {
-            new Setting(containerEl)
+            new Setting(themeEl)
                 .setName('Custom accent color')
                 .setDesc('Custom accent color (hex format, e.g., #7c3aed)')
                 .addText(text => text
@@ -876,10 +969,17 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         }
 
         // Advanced Settings Section
-        containerEl.createEl('h3', { text: 'Advanced Settings' });
+        const advancedSection = new CollapsibleSection(
+            containerEl,
+            'Advanced Settings',
+            'Reset settings and advanced configuration options',
+            '⚙️',
+            true
+        );
+        const advancedEl = advancedSection.getContentEl();
         
         // Reset to Defaults
-        new Setting(containerEl)
+        new Setting(advancedEl)
             .setName('Reset to defaults')
             .setDesc('Reset all settings to their default values')
             .addButton(button => button
@@ -914,7 +1014,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         const colorWrapper = containerEl.createDiv({ cls: 'color-setting-wrapper' });
         // Move the color setting into the wrapper
         colorWrapper.appendChild(colorSetting.settingEl);
-        colorSetting.settingEl.setAttribute('data-color-setting', settingKey);
+        colorSetting.settingEl.setAttribute('data-color-setting', String(settingKey));
         
         // Define color options
         const colorOptions = [
@@ -955,7 +1055,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
             }
             
             // Add selection indicator
-            if (this.plugin.settings[settingKey] === color.value) {
+            if ((this.plugin.settings as any)[settingKey] === color.value) {
                 colorBtn.addClass('selected');
             }
             
@@ -972,7 +1072,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.refreshHomepage();
                     // Remove any existing custom input from this wrapper
-                    const existingCustom = colorWrapper.querySelector(`[data-setting-key="${settingKey}"]`);
+                    const existingCustom = colorWrapper.querySelector(`[data-setting-key="${String(settingKey)}"]`);
                     if (existingCustom) {
                         existingCustom.remove();
                     }
@@ -981,8 +1081,8 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         });
 
         // Show custom input if current color is not in presets
-        const isPresetColor = colorOptions.some(option => option.value === this.plugin.settings[settingKey]);
-        if (!isPresetColor && this.plugin.settings[settingKey] !== 'custom') {
+        const isPresetColor = colorOptions.some(option => option.value === (this.plugin.settings as any)[settingKey]);
+        if (!isPresetColor && (this.plugin.settings as any)[settingKey] !== 'custom') {
             this.showCustomColorInputForKey(colorWrapper, settingKey);
         }
         
@@ -991,7 +1091,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
 
     private showCustomColorInputForKey(wrapperEl: HTMLElement, settingKey: keyof CommandCenterSettings) {
         // Remove any existing custom input for this setting
-        const existingCustom = wrapperEl.querySelector(`[data-setting-key="${settingKey}"]`);
+        const existingCustom = wrapperEl.querySelector(`[data-setting-key="${String(settingKey)}"]`);
         if (existingCustom) {
             existingCustom.remove();
         }
@@ -1001,11 +1101,11 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         
         // Create custom color input
         const customColorSetting = new Setting(tempContainer)
-            .setName(`Custom ${settingKey.replace('Color', '')} color`)
+            .setName(`Custom ${String(settingKey).replace('Color', '')} color`)
             .setDesc('Enter a custom color (e.g., #ff6b6b, rgb(255,107,107), var(--text-accent))')
             .addText(text => text
                 .setPlaceholder('#ff6b6b')
-                .setValue(this.plugin.settings[settingKey] === 'custom' ? '' : this.plugin.settings[settingKey] as string)
+                .setValue((this.plugin.settings as any)[settingKey] === 'custom' ? '' : (this.plugin.settings as any)[settingKey] as string)
                 .onChange(async (value) => {
                     (this.plugin.settings as any)[settingKey] = value || 'var(--text-muted)';
                     await this.plugin.saveSettings();
@@ -1013,7 +1113,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                 }));
 
         customColorSetting.settingEl.addClass('custom-color-setting');
-        customColorSetting.settingEl.setAttribute('data-setting-key', settingKey);
+        customColorSetting.settingEl.setAttribute('data-setting-key', String(settingKey));
         
         // Move the setting element from temp container to wrapper
         wrapperEl.appendChild(customColorSetting.settingEl);
@@ -1031,7 +1131,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         const colorWrapper = containerEl.createDiv({ cls: 'color-setting-wrapper' });
         // Move the color setting into the wrapper
         colorWrapper.appendChild(colorSetting.settingEl);
-        colorSetting.settingEl.setAttribute('data-color-setting', settingKey);
+        colorSetting.settingEl.setAttribute('data-color-setting', String(settingKey));
         
         // Define banner color options (original banner colors)
         const colorOptions = [
@@ -1072,7 +1172,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
             }
             
             // Add selection indicator
-            if (this.plugin.settings[settingKey] === color.value) {
+            if ((this.plugin.settings as any)[settingKey] === color.value) {
                 colorBtn.addClass('selected');
             }
             
@@ -1089,7 +1189,7 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
                     await this.plugin.saveSettings();
                     this.plugin.refreshHomepage();
                     // Remove any existing custom input from this wrapper
-                    const existingCustom = colorWrapper.querySelector(`[data-setting-key="${settingKey}"]`);
+                    const existingCustom = colorWrapper.querySelector(`[data-setting-key="${String(settingKey)}"]`);
                     if (existingCustom) {
                         existingCustom.remove();
                     }
@@ -1098,8 +1198,8 @@ export class CommandCenterSettingsTab extends PluginSettingTab {
         });
 
         // Show custom input if current color is not in presets
-        const isPresetColor = colorOptions.some(option => option.value === this.plugin.settings[settingKey]);
-        if (!isPresetColor && this.plugin.settings[settingKey] !== 'custom') {
+        const isPresetColor = colorOptions.some(option => option.value === (this.plugin.settings as any)[settingKey]);
+        if (!isPresetColor && (this.plugin.settings as any)[settingKey] !== 'custom') {
             this.showCustomColorInputForKey(colorWrapper, settingKey);
         }
         

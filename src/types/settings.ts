@@ -80,6 +80,17 @@ export interface CommandCenterSettings {
     dateTimeBackgroundOpacity: number;
     dateTimeShadow: boolean;
     dateTimeBorder: boolean;
+    
+    // Pinned Notes settings
+    showPinnedNotes: boolean;
+    pinnedNotesViewMode: 'list' | 'gallery';
+    pinnedContainers: Array<{
+        id: string;
+        title: string;
+        notes: string[];
+        collapsed: boolean;
+    }>;
+    maxPinnedContainers: number;
 }
 
 export const DEFAULT_SETTINGS: CommandCenterSettings = {
@@ -163,5 +174,11 @@ export const DEFAULT_SETTINGS: CommandCenterSettings = {
     dateTimeBackground: 'transparent',
     dateTimeBackgroundOpacity: 0.1,
     dateTimeShadow: false,
-    dateTimeBorder: false
+    dateTimeBorder: false,
+    
+    // Pinned Notes settings
+    showPinnedNotes: false,
+    pinnedNotesViewMode: 'list',
+    pinnedContainers: [],
+    maxPinnedContainers: 3
 };

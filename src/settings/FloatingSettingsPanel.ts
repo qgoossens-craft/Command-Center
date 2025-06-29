@@ -1,6 +1,7 @@
 import { Setting, PluginSettingTab } from 'obsidian';
 import type { CommandCenterPlugin } from '../main';
 import type { CommandCenterSettings } from '../types/settings';
+import { CollapsibleSection } from '../utils/CollapsibleSection';
 
 export class FloatingSettingsPanel {
     private plugin: CommandCenterPlugin;
@@ -99,43 +100,51 @@ export class FloatingSettingsPanel {
             this.dragOffset.x = e.clientX - rect.left;
             this.dragOffset.y = e.clientY - rect.top;
             
+            const onMouseMove = (e: MouseEvent) => {
+                if (!this.isDragging || !this.panelEl) return;
+                
+                const x = e.clientX - this.dragOffset.x;
+                const y = e.clientY - this.dragOffset.y;
+                
+                // Constrain to viewport
+                const clampedX = Math.max(0, Math.min(x, window.innerWidth - this.panelEl.offsetWidth));
+                const clampedY = Math.max(0, Math.min(y, window.innerHeight - this.panelEl.offsetHeight));
+                
+                this.panelEl.style.left = `${clampedX}px`;
+                this.panelEl.style.top = `${clampedY}px`;
+            };
+            
+            const onMouseUp = () => {
+                this.isDragging = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            };
+            
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
-            e.preventDefault();
-        };
-        
-        const onMouseMove = (e: MouseEvent) => {
-            if (!this.isDragging || !this.panelEl) return;
-            
-            const newX = e.clientX - this.dragOffset.x;
-            const newY = e.clientY - this.dragOffset.y;
-            
-            // Keep panel within viewport bounds
-            const maxX = window.innerWidth - this.panelEl.offsetWidth;
-            const maxY = window.innerHeight - this.panelEl.offsetHeight;
-            
-            const clampedX = Math.max(0, Math.min(newX, maxX));
-            const clampedY = Math.max(0, Math.min(newY, maxY));
-            
-            this.panelEl.style.left = `${clampedX}px`;
-            this.panelEl.style.top = `${clampedY}px`;
-        };
-        
-        const onMouseUp = () => {
-            this.isDragging = false;
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
         };
         
         header.addEventListener('mousedown', onMouseDown);
     }
 
     private createAllSettings(contentArea: HTMLElement) {
-        // General Settings Section
-        contentArea.createEl('h3', { text: 'General Settings' });
+        // Store current scroll position
+        const scrollPosition = contentArea.scrollTop;
+        
+        contentArea.empty();
 
+        // General Settings Section
+        const generalSection = new CollapsibleSection(
+            contentArea,
+            'General Settings',
+            'Basic configuration options for your homepage',
+            '⚙️',
+            false
+        );
+        const generalEl = generalSection.getContentEl();
+        
         // Custom Title
-        new Setting(contentArea)
+        new Setting(generalEl)
             .setName('Homepage Title')
             .setDesc('The main title displayed on your homepage')
             .addText(text => text
@@ -148,7 +157,7 @@ export class FloatingSettingsPanel {
                 }));
 
         // Custom Message
-        new Setting(contentArea)
+        new Setting(generalEl)
             .setName('Custom Message')
             .setDesc('Custom message to display instead of title (leave empty to show title)')
             .addText(text => text
@@ -161,7 +170,7 @@ export class FloatingSettingsPanel {
                 }));
 
         // Open on Startup
-        new Setting(contentArea)
+        new Setting(generalEl)
             .setName('Open on startup')
             .setDesc('Automatically open the homepage when Obsidian starts')
             .addToggle(toggle => toggle
@@ -172,30 +181,30 @@ export class FloatingSettingsPanel {
                 }));
 
         // Visual Settings Section
-        contentArea.createEl('h3', { text: 'Visual Settings' });
+        const visualSection = new CollapsibleSection(
+            contentArea,
+            'Visual Settings',
+            'Customize the appearance and background of your homepage',
+            '🎨',
+            true
+        );
+        const visualEl = visualSection.getContentEl();
 
         // Title Font Size
-        new Setting(contentArea)
+        new Setting(visualEl)
             .setName('Title font size')
-            .setDesc('Size of the main title')
-            .addDropdown(dropdown => dropdown
-                .addOptions({
-                    '1.5em': 'Small',
-                    '2em': 'Medium',
-                    '2.5em': 'Large',
-                    '3em': 'Extra Large',
-                    '3.5em': 'Huge',
-                    '4em': 'Massive'
-                })
+            .setDesc('Size of the main title (e.g., 2em, 3em, 48px)')
+            .addText(text => text
+                .setPlaceholder('3em')
                 .setValue(this.plugin.settings.titleFontSize)
-                .onChange(async (value: any) => {
+                .onChange(async (value) => {
                     this.plugin.settings.titleFontSize = value;
                     await this.plugin.saveSettings();
                     this.plugin.refreshHomepage();
                 }));
 
         // Background Image
-        new Setting(contentArea)
+        new Setting(visualEl)
             .setName('Background image')
             .setDesc('URL or path to background image (leave empty for none)')
             .addText(text => text
@@ -208,7 +217,7 @@ export class FloatingSettingsPanel {
                 }));
 
         // Background Color
-        new Setting(contentArea)
+        new Setting(visualEl)
             .setName('Background color')
             .setDesc('Background color (CSS format, e.g., #1e1e1e, rgb(30,30,30))')
             .addText(text => text
@@ -221,7 +230,7 @@ export class FloatingSettingsPanel {
                 }));
 
         // Background Overlay
-        new Setting(contentArea)
+        new Setting(visualEl)
             .setName('Background overlay')
             .setDesc('Add a dark overlay over background images for better text readability')
             .addToggle(toggle => toggle
@@ -233,7 +242,7 @@ export class FloatingSettingsPanel {
                 }));
 
         // Overlay Opacity
-        new Setting(contentArea)
+        new Setting(visualEl)
             .setName('Overlay opacity')
             .setDesc('Strength of the background overlay (0 = transparent, 1 = opaque)')
             .addSlider(slider => slider
@@ -247,12 +256,19 @@ export class FloatingSettingsPanel {
                 }));
 
         // Banner Settings Section
-        contentArea.createEl('h3', { text: 'Banner Settings' });
+        const bannerSection = new CollapsibleSection(
+            contentArea,
+            'Banner Settings',
+            'Configure banner images and text overlays',
+            '🖼️',
+            true
+        );
+        const bannerEl = bannerSection.getContentEl();
 
         // Show Banner
-        new Setting(contentArea)
+        new Setting(bannerEl)
             .setName('Show banner')
-            .setDesc('Display a banner at the top of the homepage')
+            .setDesc('Display a banner at the top of the homepage, behind the title')
             .addToggle(toggle => toggle
                 .setValue(this.plugin.settings.showBanner)
                 .onChange(async (value) => {
@@ -262,11 +278,12 @@ export class FloatingSettingsPanel {
                     this.refreshPanel(); // Refresh to show/hide banner settings
                 }));
 
+        // Banner settings (only show if banner is enabled)
         if (this.plugin.settings.showBanner) {
             // Banner Text
-            new Setting(contentArea)
+            new Setting(bannerEl)
                 .setName('Banner text')
-                .setDesc('Text to display on the banner')
+                .setDesc('Text to display on the banner (leave empty for image-only banner)')
                 .addText(text => text
                     .setPlaceholder('Welcome to your workspace')
                     .setValue(this.plugin.settings.bannerText)
@@ -277,7 +294,7 @@ export class FloatingSettingsPanel {
                     }));
 
             // Banner Image
-            new Setting(contentArea)
+            new Setting(bannerEl)
                 .setName('Banner image')
                 .setDesc('URL or path to banner background image (leave empty for text-only banner)')
                 .addText(text => text
@@ -290,7 +307,7 @@ export class FloatingSettingsPanel {
                     }));
 
             // Banner Height
-            new Setting(contentArea)
+            new Setting(bannerEl)
                 .setName('Banner height')
                 .setDesc('Height of the banner (e.g., 200px, 15vh, 10em)')
                 .addText(text => text
@@ -303,7 +320,7 @@ export class FloatingSettingsPanel {
                     }));
 
             // Banner Opacity
-            new Setting(contentArea)
+            new Setting(bannerEl)
                 .setName('Banner opacity')
                 .setDesc('Opacity of the banner background (0 = transparent, 1 = opaque)')
                 .addSlider(slider => slider
@@ -316,11 +333,8 @@ export class FloatingSettingsPanel {
                         this.plugin.refreshHomepage();
                     }));
 
-            // Advanced Banner Settings
-            contentArea.createEl('h4', { text: 'Advanced Banner Settings', cls: 'setting-item-heading' });
-
-            // Banner Text Position
-            new Setting(contentArea)
+            // Text Position
+            new Setting(bannerEl)
                 .setName('Text position')
                 .setDesc('Position of the text within the banner')
                 .addDropdown(dropdown => dropdown
@@ -342,34 +356,56 @@ export class FloatingSettingsPanel {
                         this.plugin.refreshHomepage();
                     }));
 
-            // Banner Text Color
-            this.createColorPaletteSetting(contentArea, 'Banner text color', 'Choose color for the banner text', 'bannerTextColor');
-
-            // Banner Text Size
-            new Setting(contentArea)
+            // Text Size
+            new Setting(bannerEl)
                 .setName('Text size')
-                .setDesc('Font size of the banner text')
+                .setDesc('Size of the banner text')
                 .addDropdown(dropdown => dropdown
                     .addOptions({
-                        '0.8em': 'Extra Small',
-                        '1em': 'Small',
-                        '1.2em': 'Medium',
-                        '1.5em': 'Large',
-                        '1.8em': 'Extra Large',
-                        '2.2em': 'Huge',
-                        '2.8em': 'Massive'
+                        'var(--font-ui-small)': 'Small',
+                        'var(--font-ui-medium)': 'Medium',
+                        'var(--font-ui-large)': 'Large',
+                        'var(--font-ui-larger)': 'Larger',
+                        '1.5em': 'Extra Large',
+                        '2em': 'XXL',
+                        '2.5em': 'Huge',
+                        '3em': 'Massive',
+                        'custom': 'Custom...'
                     })
                     .setValue(this.plugin.settings.bannerTextSize)
-                    .onChange(async (value: any) => {
+                    .onChange(async (value) => {
+                        if (value === 'custom') {
+                            // Keep current value and don't change it
+                            return;
+                        }
                         this.plugin.settings.bannerTextSize = value;
                         await this.plugin.saveSettings();
                         this.plugin.refreshHomepage();
                     }));
 
-            // Banner Text Shadow
-            new Setting(contentArea)
+            // Custom text size input (only show if custom is selected)
+            if (this.plugin.settings.bannerTextSize === 'custom' || 
+                !['var(--font-ui-small)', 'var(--font-ui-medium)', 'var(--font-ui-large)', 'var(--font-ui-larger)', '1.5em', '2em', '2.5em', '3em'].includes(this.plugin.settings.bannerTextSize)) {
+                new Setting(bannerEl)
+                    .setName('Custom text size')
+                    .setDesc('Custom size value (e.g., 1.8em, 24px, large)')
+                    .addText(text => text
+                        .setPlaceholder('1.8em')
+                        .setValue(this.plugin.settings.bannerTextSize === 'custom' ? '' : this.plugin.settings.bannerTextSize)
+                        .onChange(async (value) => {
+                            this.plugin.settings.bannerTextSize = value || 'var(--font-ui-larger)';
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                        }));
+            }
+
+            // Text Color - use the new createBannerColorPaletteSetting method
+            this.createBannerColorPaletteSetting(bannerEl, 'Text color', 'Choose a color for the banner text', 'bannerTextColor');
+
+            // Text Shadow
+            new Setting(bannerEl)
                 .setName('Text shadow')
-                .setDesc('Add a shadow effect behind the banner text for better readability')
+                .setDesc('Add shadow effect to banner text for better readability')
                 .addToggle(toggle => toggle
                     .setValue(this.plugin.settings.bannerTextShadow)
                     .onChange(async (value) => {
@@ -378,16 +414,16 @@ export class FloatingSettingsPanel {
                         this.plugin.refreshHomepage();
                     }));
 
-            // Banner Image Fit
-            new Setting(contentArea)
+            // Image Fit
+            new Setting(bannerEl)
                 .setName('Image fit')
-                .setDesc('How the banner image should be displayed')
+                .setDesc('How the background image should fit within the banner')
                 .addDropdown(dropdown => dropdown
                     .addOptions({
-                        'cover': 'Cover (fill area, may crop)',
-                        'contain': 'Contain (fit entirely)',
-                        'fill': 'Fill (stretch to fit)',
-                        'scale-down': 'Scale down (smaller version of contain)'
+                        'cover': 'Cover - Fill entire banner, may crop image',
+                        'contain': 'Contain - Fit entire image, may show empty space',
+                        'fill': 'Fill - Stretch to fill banner (may distort)',
+                        'scale-down': 'Scale Down - Smaller of contain or original size'
                     })
                     .setValue(this.plugin.settings.bannerImageFit)
                     .onChange(async (value: any) => {
@@ -396,10 +432,10 @@ export class FloatingSettingsPanel {
                         this.plugin.refreshHomepage();
                     }));
 
-            // Banner Image Position
-            new Setting(contentArea)
+            // Image Position
+            new Setting(bannerEl)
                 .setName('Image position')
-                .setDesc('Position of the banner image')
+                .setDesc('Position of the background image within the banner')
                 .addDropdown(dropdown => dropdown
                     .addOptions({
                         'center': 'Center',
@@ -419,13 +455,23 @@ export class FloatingSettingsPanel {
                         this.plugin.refreshHomepage();
                     }));
 
-            // Banner Overlay Color
-            this.createColorPaletteSetting(contentArea, 'Overlay color', 'Choose color for the banner overlay', 'bannerOverlayColor');
+            // Overlay Color
+            new Setting(bannerEl)
+                .setName('Overlay color')
+                .setDesc('Color of the overlay behind text (e.g., #000000, rgb(0,0,0))')
+                .addText(text => text
+                    .setPlaceholder('#000000')
+                    .setValue(this.plugin.settings.bannerOverlayColor)
+                    .onChange(async (value) => {
+                        this.plugin.settings.bannerOverlayColor = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
 
-            // Banner Overlay Opacity
-            new Setting(contentArea)
+            // Overlay Opacity
+            new Setting(bannerEl)
                 .setName('Overlay opacity')
-                .setDesc('Opacity of the text overlay background')
+                .setDesc('Opacity of the text overlay background (0 = transparent, 1 = opaque)')
                 .addSlider(slider => slider
                     .setLimits(0, 1, 0.1)
                     .setValue(this.plugin.settings.bannerOverlayOpacity)
@@ -436,12 +482,12 @@ export class FloatingSettingsPanel {
                         this.plugin.refreshHomepage();
                     }));
 
-            // Banner Blur
-            new Setting(contentArea)
-                .setName('Background blur')
-                .setDesc('Blur effect for the banner background image (in pixels)')
+            // Image Blur
+            new Setting(bannerEl)
+                .setName('Image blur')
+                .setDesc('Blur effect for the background image (0 = no blur, 10 = heavy blur)')
                 .addSlider(slider => slider
-                    .setLimits(0, 20, 1)
+                    .setLimits(0, 10, 1)
                     .setValue(this.plugin.settings.bannerBlur)
                     .setDynamicTooltip()
                     .onChange(async (value) => {
@@ -451,282 +497,26 @@ export class FloatingSettingsPanel {
                     }));
         }
 
-        // Date & Time Settings
-        contentArea.createEl('h3', { text: 'Date & Time Settings' });
-
-        // Show Date/Time
-        new Setting(contentArea)
-            .setName('Show date and time')
-            .setDesc('Display the current date and time on the homepage')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showDateTime)
-                .onChange(async (value) => {
-                    this.plugin.settings.showDateTime = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHomepage();
-                    this.refreshPanel(); // Refresh to show/hide date/time settings
-                }));
-
-        if (this.plugin.settings.showDateTime) {
-            // Date Format
-            new Setting(contentArea)
-                .setName('Date format')
-                .setDesc('How to display the date (using date-fns format)')
-                .addDropdown(dropdown => dropdown
-                    .addOptions({
-                        'EEEE, MMMM d, yyyy': 'Friday, June 27, 2025',
-                        'MMM d, yyyy': 'Jun 27, 2025',
-                        'MM/dd/yyyy': '06/27/2025',
-                        'dd/MM/yyyy': '27/06/2025',
-                        'yyyy-MM-dd': '2025-06-27',
-                        'EEEE, MMM d': 'Friday, Jun 27',
-                        'd MMMM yyyy': '27 June 2025'
-                    })
-                    .setValue(this.plugin.settings.dateFormat)
-                    .onChange(async (value: any) => {
-                        this.plugin.settings.dateFormat = value;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshHomepage();
-                    }));
-
-            // Time Format
-            new Setting(contentArea)
-                .setName('Time format')
-                .setDesc('How to display the time')
-                .addDropdown(dropdown => dropdown
-                    .addOptions({
-                        'h:mm a': '8:04 PM',
-                        'HH:mm': '20:04',
-                        'h:mm:ss a': '8:04:32 PM',
-                        'HH:mm:ss': '20:04:32'
-                    })
-                    .setValue(this.plugin.settings.timeFormat)
-                    .onChange(async (value: any) => {
-                        this.plugin.settings.timeFormat = value;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshHomepage();
-                    }));
-
-            // Date/Time Position
-            new Setting(contentArea)
-                .setName('Position')
-                .setDesc('Where to display the date and time')
-                .addDropdown(dropdown => dropdown
-                    .addOptions({
-                        'center': 'Center',
-                        'left': 'Left',
-                        'right': 'Right',
-                        'below-title': 'Below Title',
-                        'above-title': 'Above Title'
-                    })
-                    .setValue(this.plugin.settings.dateTimePosition)
-                    .onChange(async (value: any) => {
-                        this.plugin.settings.dateTimePosition = value;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshHomepage();
-                    }));
-
-            // Date/Time Layout
-            new Setting(contentArea)
-                .setName('Layout')
-                .setDesc('How to arrange date and time')
-                .addDropdown(dropdown => dropdown
-                    .addOptions({
-                        'horizontal': 'Horizontal (side by side)',
-                        'vertical': 'Vertical (stacked)',
-                        'stacked': 'Stacked (date emphasized)'
-                    })
-                    .setValue(this.plugin.settings.dateTimeLayout)
-                    .onChange(async (value: any) => {
-                        this.plugin.settings.dateTimeLayout = value;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshHomepage();
-                    }));
-
-            // Date Font Size
-            new Setting(contentArea)
-                .setName('Date font size')
-                .setDesc('Font size for the date')
-                .addDropdown(dropdown => dropdown
-                    .addOptions({
-                        '0.8em': 'Extra Small',
-                        '0.9em': 'Small',
-                        '1em': 'Medium',
-                        '1.2em': 'Large',
-                        '1.4em': 'Extra Large',
-                        '1.6em': 'Huge'
-                    })
-                    .setValue(this.plugin.settings.dateFontSize)
-                    .onChange(async (value: any) => {
-                        this.plugin.settings.dateFontSize = value;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshHomepage();
-                    }));
-
-            // Time Font Size
-            new Setting(contentArea)
-                .setName('Time font size')
-                .setDesc('Font size for the time')
-                .addDropdown(dropdown => dropdown
-                    .addOptions({
-                        '0.8em': 'Extra Small',
-                        '0.9em': 'Small',
-                        '1em': 'Medium',
-                        '1.2em': 'Large',
-                        '1.4em': 'Extra Large',
-                        '1.6em': 'Huge'
-                    })
-                    .setValue(this.plugin.settings.timeFontSize)
-                    .onChange(async (value: any) => {
-                        this.plugin.settings.timeFontSize = value;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshHomepage();
-                    }));
-
-            // Date Color
-            this.createColorPaletteSetting(contentArea, 'Date color', 'Choose color for the date text', 'dateColor');
-
-            // Time Color  
-            this.createColorPaletteSetting(contentArea, 'Time color', 'Choose color for the time text', 'timeColor');
-
-            // Date/Time Background
-            this.createColorPaletteSetting(contentArea, 'Background color', 'Choose background color for date/time area', 'dateTimeBackground');
-
-            // Date/Time Background Opacity
-            new Setting(contentArea)
-                .setName('Background opacity')
-                .setDesc('Opacity of the date/time background')
-                .addSlider(slider => slider
-                    .setLimits(0, 1, 0.1)
-                    .setValue(this.plugin.settings.dateTimeBackgroundOpacity)
-                    .setDynamicTooltip()
-                    .onChange(async (value) => {
-                        this.plugin.settings.dateTimeBackgroundOpacity = value;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshHomepage();
-                    }));
-
-            // Date/Time Shadow
-            new Setting(contentArea)
-                .setName('Text shadow')
-                .setDesc('Add shadow effect to date/time text')
-                .addToggle(toggle => toggle
-                    .setValue(this.plugin.settings.dateTimeShadow)
-                    .onChange(async (value) => {
-                        this.plugin.settings.dateTimeShadow = value;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshHomepage();
-                    }));
-
-            // Date/Time Border
-            new Setting(contentArea)
-                .setName('Border')
-                .setDesc('Add border around date/time area')
-                .addToggle(toggle => toggle
-                    .setValue(this.plugin.settings.dateTimeBorder)
-                    .onChange(async (value) => {
-                        this.plugin.settings.dateTimeBorder = value;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshHomepage();
-                    }));
-        }
-
-        // Widget Visibility Section
-        contentArea.createEl('h3', { text: 'Widget Visibility' });
-
-        // Show Search
-        new Setting(contentArea)
-            .setName('Show search widget')
-            .setDesc('Display the universal search widget')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showSearch)
-                .onChange(async (value) => {
-                    this.plugin.settings.showSearch = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHomepage();
-                }));
-
-        // Show Recent Files
-        new Setting(contentArea)
-            .setName('Show recent files')
-            .setDesc('Display a list of recently modified files')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showRecentFiles)
-                .onChange(async (value) => {
-                    this.plugin.settings.showRecentFiles = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHomepage();
-                }));
-
-        // Show Bookmarks
-        new Setting(contentArea)
-            .setName('Show bookmarks')
-            .setDesc('Display your Obsidian bookmarks')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showBookmarks)
-                .onChange(async (value) => {
-                    this.plugin.settings.showBookmarks = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHomepage();
-                }));
-
-        // Show Todos
-        new Setting(contentArea)
-            .setName('Show tasks')
-            .setDesc('Display your todo/task list')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.showTodos)
-                .onChange(async (value) => {
-                    this.plugin.settings.showTodos = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHomepage();
-                }));
-
-        // Todo Settings Section
-        contentArea.createEl('h3', { text: 'Task Settings' });
-
-        // Auto Cleanup Completed
-        new Setting(contentArea)
-            .setName('Auto-cleanup completed tasks')
-            .setDesc('Automatically remove completed tasks after specified days')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.autoCleanupCompleted)
-                .onChange(async (value) => {
-                    this.plugin.settings.autoCleanupCompleted = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHomepage();
-                    this.refreshPanel(); // Refresh to show/hide cleanup settings
-                }));
-
-        if (this.plugin.settings.autoCleanupCompleted) {
-            // Cleanup Delay Days
-            new Setting(contentArea)
-                .setName('Cleanup delay (days)')
-                .setDesc('Number of days to wait before removing completed tasks (0 = immediate)')
-                .addSlider(slider => slider
-                    .setLimits(0, 30, 1)
-                    .setValue(this.plugin.settings.cleanupDelayDays)
-                    .setDynamicTooltip()
-                    .onChange(async (value) => {
-                        this.plugin.settings.cleanupDelayDays = value;
-                        await this.plugin.saveSettings();
-                        this.plugin.refreshHomepage();
-                    }));
-        }
-
         // Layout Settings Section
-        contentArea.createEl('h3', { text: 'Layout Settings' });
+        const layoutSection = new CollapsibleSection(
+            contentArea,
+            'Layout Settings',
+            'Configure layout presets and widget arrangement',
+            '⚡',
+            true
+        );
+        const layoutEl = layoutSection.getContentEl();
 
         // Layout Preset
-        new Setting(contentArea)
+        new Setting(layoutEl)
             .setName('Layout preset')
-            .setDesc('Choose a predefined layout for your homepage')
+            .setDesc('Choose a predefined layout style that affects widget arrangement')
             .addDropdown(dropdown => dropdown
                 .addOptions({
-                    'default': 'Default (balanced)',
-                    'minimal': 'Minimal (clean)',
-                    'dashboard': 'Dashboard (information-dense)',
-                    'productivity': 'Productivity (task-focused)'
+                    'default': 'Default - Balanced grid layout',
+                    'minimal': 'Minimal - Clean single column',
+                    'dashboard': 'Dashboard - Information-dense grid',
+                    'productivity': 'Productivity - Focus-oriented layout'
                 })
                 .setValue(this.plugin.settings.layoutPreset)
                 .onChange(async (value: any) => {
@@ -736,9 +526,9 @@ export class FloatingSettingsPanel {
                 }));
 
         // Widget Columns
-        new Setting(contentArea)
+        new Setting(layoutEl)
             .setName('Widget columns')
-            .setDesc('Number of columns for widget layout (when using default preset)')
+            .setDesc('Number of columns for widget layout (overridden by layout presets)')
             .addSlider(slider => slider
                 .setLimits(1, 5, 1)
                 .setValue(this.plugin.settings.widgetColumns)
@@ -749,11 +539,95 @@ export class FloatingSettingsPanel {
                     this.plugin.refreshHomepage();
                 }));
 
+        // Widget Visibility Section
+        const widgetVisibilitySection = new CollapsibleSection(
+            contentArea,
+            'Widget Visibility',
+            'Control which widgets appear on your homepage (widgets will be available in future phases)',
+            '📊',
+            true
+        );
+        const widgetVisibilityEl = widgetVisibilitySection.getContentEl();
+
+        // Show Search
+        new Setting(widgetVisibilityEl)
+            .setName('Show search widget')
+            .setDesc('Display universal search bar with file search and quick actions')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showSearch)
+                .onChange(async (value) => {
+                    this.plugin.settings.showSearch = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                }));
+
+        // Show Bookmarks
+        new Setting(widgetVisibilityEl)
+            .setName('Show bookmarks widget')
+            .setDesc('Display bookmarks and starred files')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showBookmarks)
+                .onChange(async (value) => {
+                    this.plugin.settings.showBookmarks = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                }));
+
+        // Show Recent Files
+        new Setting(widgetVisibilityEl)
+            .setName('Show recent files widget')
+            .setDesc('Display recently modified files')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showRecentFiles)
+                .onChange(async (value) => {
+                    this.plugin.settings.showRecentFiles = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                }));
+                
+        // Show Pinned Notes
+        new Setting(widgetVisibilityEl)
+            .setName('Show pinned notes')
+            .setDesc('Display pinned notes containers below search')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showPinnedNotes)
+                .onChange(async (value) => {
+                    this.plugin.settings.showPinnedNotes = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                    this.refreshPanel(); // Refresh to show/hide related settings
+                }));
+                
+        // Pinned Notes View Mode (only show if pinned notes are enabled)
+        if (this.plugin.settings.showPinnedNotes) {
+            new Setting(widgetVisibilityEl)
+                .setName('Pinned notes view mode')
+                .setDesc('Display pinned notes as list or gallery')
+                .addDropdown(dropdown => dropdown
+                    .addOptions({
+                        'list': 'List View',
+                        'gallery': 'Gallery View'
+                    })
+                    .setValue(this.plugin.settings.pinnedNotesViewMode)
+                    .onChange(async (value: 'list' | 'gallery') => {
+                        this.plugin.settings.pinnedNotesViewMode = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+        }
+
         // Content Limits Section
-        contentArea.createEl('h3', { text: 'Content Limits' });
+        const contentLimitsSection = new CollapsibleSection(
+            contentArea,
+            'Content Limits',
+            'Set maximum number of items to display in each widget',
+            '🔢',
+            true
+        );
+        const contentLimitsEl = contentLimitsSection.getContentEl();
 
         // Max Recent Files
-        new Setting(contentArea)
+        new Setting(contentLimitsEl)
             .setName('Max recent files')
             .setDesc('Maximum number of recent files to display')
             .addSlider(slider => slider
@@ -767,7 +641,7 @@ export class FloatingSettingsPanel {
                 }));
 
         // Max Bookmarks
-        new Setting(contentArea)
+        new Setting(contentLimitsEl)
             .setName('Max bookmarks')
             .setDesc('Maximum number of bookmarks to display')
             .addSlider(slider => slider
@@ -781,11 +655,11 @@ export class FloatingSettingsPanel {
                 }));
 
         // Max Todos
-        new Setting(contentArea)
-            .setName('Max tasks')
-            .setDesc('Maximum number of tasks to display')
+        new Setting(contentLimitsEl)
+            .setName('Max todos')
+            .setDesc('Maximum number of todos to display')
             .addSlider(slider => slider
-                .setLimits(1, 50, 1)
+                .setLimits(1, 20, 1)
                 .setValue(this.plugin.settings.maxTodos)
                 .setDynamicTooltip()
                 .onChange(async (value) => {
@@ -795,12 +669,19 @@ export class FloatingSettingsPanel {
                 }));
 
         // Section Names Section
-        contentArea.createEl('h3', { text: 'Section Names' });
+        const sectionNamesSection = new CollapsibleSection(
+            contentArea,
+            'Section Names',
+            'Customize the titles displayed for each widget section',
+            '🏷️',
+            true
+        );
+        const sectionNamesEl = sectionNamesSection.getContentEl();
 
         // Search Section Title
-        new Setting(contentArea)
+        new Setting(sectionNamesEl)
             .setName('Search section title')
-            .setDesc('Title for the search widget section')
+            .setDesc('Title for the search section')
             .addText(text => text
                 .setPlaceholder('Universal Search')
                 .setValue(this.plugin.settings.searchSectionTitle)
@@ -811,7 +692,7 @@ export class FloatingSettingsPanel {
                 }));
 
         // Quick Actions Section Title
-        new Setting(contentArea)
+        new Setting(sectionNamesEl)
             .setName('Quick actions section title')
             .setDesc('Title for the quick actions section')
             .addText(text => text
@@ -824,7 +705,7 @@ export class FloatingSettingsPanel {
                 }));
 
         // Bookmarks Section Title
-        new Setting(contentArea)
+        new Setting(sectionNamesEl)
             .setName('Bookmarks section title')
             .setDesc('Title for the bookmarks section')
             .addText(text => text
@@ -837,7 +718,7 @@ export class FloatingSettingsPanel {
                 }));
 
         // Recent Files Section Title
-        new Setting(contentArea)
+        new Setting(sectionNamesEl)
             .setName('Recent files section title')
             .setDesc('Title for the recent files section')
             .addText(text => text
@@ -849,10 +730,10 @@ export class FloatingSettingsPanel {
                     this.plugin.refreshHomepage();
                 }));
 
-        // Tasks Section Title
-        new Setting(contentArea)
-            .setName('Tasks section title')
-            .setDesc('Title for the tasks section')
+        // Todos Section Title
+        new Setting(sectionNamesEl)
+            .setName('Todos section title')
+            .setDesc('Title for the todos section')
             .addText(text => text
                 .setPlaceholder('Tasks')
                 .setValue(this.plugin.settings.todosSectionTitle)
@@ -862,52 +743,36 @@ export class FloatingSettingsPanel {
                     this.plugin.refreshHomepage();
                 }));
 
-        // Theme Settings Section
-        contentArea.createEl('h3', { text: 'Theme Settings' });
-
-        // Use Obsidian Accent
-        new Setting(contentArea)
-            .setName('Use Obsidian accent color')
-            .setDesc('Use the accent color from your Obsidian theme')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.useObsidianAccent)
-                .onChange(async (value) => {
-                    this.plugin.settings.useObsidianAccent = value;
-                    await this.plugin.saveSettings();
-                    this.plugin.refreshHomepage();
-                    this.refreshPanel(); // Refresh to show/hide custom accent color
-                }));
-
-        if (!this.plugin.settings.useObsidianAccent) {
-            // Custom Accent Color
-            this.createColorPaletteSetting(contentArea, 'Custom accent color', 'Choose a custom accent color for the homepage', 'customAccentColor');
-        }
-
-        // Advanced Todo Settings Section
-        contentArea.createEl('h3', { text: 'Advanced Task Settings' });
+        // Todo Settings Section
+        const todoSettingsSection = new CollapsibleSection(
+            contentArea,
+            'Todo Settings',
+            'Configure task parsing, source files, and cleanup options',
+            '✅',
+            true
+        );
+        const todoSettingsEl = todoSettingsSection.getContentEl();
 
         // Todo Parse Mode
-        new Setting(contentArea)
-            .setName('Task source')
-            .setDesc('Where to look for tasks')
+        new Setting(todoSettingsEl)
+            .setName('Task parsing mode')
+            .setDesc('Parse tasks from entire vault or a single file')
             .addDropdown(dropdown => dropdown
-                .addOptions({
-                    'vault': 'Entire vault',
-                    'single-file': 'Single file only'
-                })
+                .addOption('vault', 'Entire vault')
+                .addOption('single-file', 'Single file')
                 .setValue(this.plugin.settings.todoParseMode)
-                .onChange(async (value: any) => {
+                .onChange(async (value: 'vault' | 'single-file') => {
                     this.plugin.settings.todoParseMode = value;
                     await this.plugin.saveSettings();
                     this.plugin.refreshHomepage();
                     this.refreshPanel(); // Refresh to show/hide source file setting
                 }));
 
-        // Todo Source File (only show if single-file mode)
+        // Todo Source File (only show in single-file mode)
         if (this.plugin.settings.todoParseMode === 'single-file') {
-            new Setting(contentArea)
+            new Setting(todoSettingsEl)
                 .setName('Task source file')
-                .setDesc('File to scan for tasks (when using single-file mode)')
+                .setDesc('File to read tasks from (e.g., Tasks.md)')
                 .addText(text => text
                     .setPlaceholder('Tasks.md')
                     .setValue(this.plugin.settings.todoSourceFile)
@@ -918,66 +783,536 @@ export class FloatingSettingsPanel {
                     }));
         }
 
-        // Default Todo File
-        new Setting(contentArea)
+        // Default Todo File (for new tasks)
+        new Setting(todoSettingsEl)
             .setName('Default task file')
-            .setDesc('File where new tasks will be created')
+            .setDesc('File where new tasks are added when in vault mode')
             .addText(text => text
                 .setPlaceholder('Tasks.md')
                 .setValue(this.plugin.settings.defaultTodoFile)
                 .onChange(async (value) => {
                     this.plugin.settings.defaultTodoFile = value;
                     await this.plugin.saveSettings();
+                }));
+
+        // Auto Cleanup Completed Tasks
+        new Setting(todoSettingsEl)
+            .setName('Auto-cleanup completed tasks')
+            .setDesc('Automatically remove completed tasks after a specified number of days (0 = immediately)')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.autoCleanupCompleted)
+                .onChange(async (value) => {
+                    this.plugin.settings.autoCleanupCompleted = value;
+                    await this.plugin.saveSettings();
+                    this.refreshPanel(); // Refresh to show/hide cleanup delay setting
+                }));
+
+        // Cleanup Delay Days (only show if auto-cleanup is enabled)
+        if (this.plugin.settings.autoCleanupCompleted) {
+            new Setting(todoSettingsEl)
+                .setName('Cleanup delay (days)')
+                .setDesc('Number of days to wait before removing completed tasks (0 = immediately)')
+                .addSlider(slider => slider
+                    .setLimits(0, 30, 1)
+                    .setValue(this.plugin.settings.cleanupDelayDays)
+                    .setDynamicTooltip()
+                    .onChange(async (value) => {
+                        this.plugin.settings.cleanupDelayDays = value;
+                        await this.plugin.saveSettings();
+                    }));
+        }
+
+        // Date & Time Settings Section
+        const dateTimeSection = new CollapsibleSection(
+            contentArea,
+            'Date & Time Settings',
+            'Customize date and time display formats and appearance',
+            '🗓️',
+            true
+        );
+        const dateTimeEl = dateTimeSection.getContentEl();
+
+        // Date Format
+        new Setting(dateTimeEl)
+            .setName('Date format')
+            .setDesc('Custom date format pattern (e.g., "EEEE, MMMM d, yyyy" for "Monday, January 1, 2024")')
+            .addText(text => text
+                .setPlaceholder('EEEE, MMMM d, yyyy')
+                .setValue(this.plugin.settings.dateFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.dateFormat = value;
+                    await this.plugin.saveSettings();
                     this.plugin.refreshHomepage();
                 }));
 
-        // Quick note at bottom
-        const note = contentArea.createDiv({ cls: 'settings-note' });
-        note.createEl('p', { 
-            text: '💡 Drag this panel anywhere and see changes instantly on your homepage!',
-            cls: 'settings-tip'
-        });
+        // Add some common format examples
+        const dateExamples = dateTimeEl.createDiv({ cls: 'setting-item-description' });
+        dateExamples.innerHTML = `
+            <strong>Common patterns:</strong><br>
+            • <code>EEEE, MMMM d, yyyy</code> → Monday, January 1, 2024<br>
+            • <code>EEE, MMM d, yyyy</code> → Mon, Jan 1, 2024<br>
+            • <code>MM/dd/yyyy</code> → 01/01/2024<br>
+            • <code>dd/MM/yyyy</code> → 01/01/2024<br>
+            • <code>yyyy-MM-dd</code> → 2024-01-01
+        `;
+
+        // Time Format
+        new Setting(dateTimeEl)
+            .setName('Time format')
+            .setDesc('Custom time format pattern (e.g., "h:mm a" for "1:30 PM")')
+            .addText(text => text
+                .setPlaceholder('h:mm a')
+                .setValue(this.plugin.settings.timeFormat)
+                .onChange(async (value) => {
+                    this.plugin.settings.timeFormat = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                }));
+
+        // Add time format examples
+        const timeExamples = dateTimeEl.createDiv({ cls: 'setting-item-description' });
+        timeExamples.innerHTML = `
+            <strong>Common patterns:</strong><br>
+            • <code>h:mm a</code> → 1:30 PM<br>
+            • <code>HH:mm</code> → 13:30<br>
+            • <code>h:mm:ss a</code> → 1:30:45 PM<br>
+            • <code>HH:mm:ss</code> → 13:30:45
+        `;
+
+        // Show Date/Time
+        new Setting(dateTimeEl)
+            .setName('Show date & time')
+            .setDesc('Display date and time in the header')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.showDateTime)
+                .onChange(async (value) => {
+                    this.plugin.settings.showDateTime = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                    this.refreshPanel(); // Refresh to show/hide date/time settings
+                }));
+
+        // Date/time settings (only show if date/time is enabled)
+        if (this.plugin.settings.showDateTime) {
+            // Position
+            new Setting(dateTimeEl)
+                .setName('Position')
+                .setDesc('Position of date and time relative to the title')
+                .addDropdown(dropdown => dropdown
+                    .addOptions({
+                        'center': 'Center (below title)',
+                        'left': 'Left side',
+                        'right': 'Right side',
+                        'above-title': 'Above title',
+                        'below-title': 'Below title'
+                    })
+                    .setValue(this.plugin.settings.dateTimePosition)
+                    .onChange(async (value: any) => {
+                        this.plugin.settings.dateTimePosition = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+
+            // Layout
+            new Setting(dateTimeEl)
+                .setName('Layout')
+                .setDesc('How date and time are arranged')
+                .addDropdown(dropdown => dropdown
+                    .addOptions({
+                        'horizontal': 'Side by side',
+                        'vertical': 'Stacked vertically',
+                        'stacked': 'Compact stack'
+                    })
+                    .setValue(this.plugin.settings.dateTimeLayout)
+                    .onChange(async (value: any) => {
+                        this.plugin.settings.dateTimeLayout = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+
+            // Date Font Size
+            new Setting(dateTimeEl)
+                .setName('Date size')
+                .setDesc('Font size for the date')
+                .addDropdown(dropdown => dropdown
+                    .addOptions({
+                        'var(--font-ui-small)': 'Small',
+                        'var(--font-ui-medium)': 'Medium',
+                        'var(--font-ui-large)': 'Large',
+                        'var(--font-ui-larger)': 'Larger',
+                        '1.5em': 'Extra Large',
+                        '2em': 'XXL',
+                        'custom': 'Custom...'
+                    })
+                    .setValue(this.plugin.settings.dateFontSize)
+                    .onChange(async (value) => {
+                        if (value === 'custom') return;
+                        this.plugin.settings.dateFontSize = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+
+            // Time Font Size
+            new Setting(dateTimeEl)
+                .setName('Time size')
+                .setDesc('Font size for the time')
+                .addDropdown(dropdown => dropdown
+                    .addOptions({
+                        'var(--font-ui-small)': 'Small',
+                        'var(--font-ui-medium)': 'Medium',
+                        'var(--font-ui-large)': 'Large',
+                        'var(--font-ui-larger)': 'Larger',
+                        '1.5em': 'Extra Large',
+                        '2em': 'XXL',
+                        'custom': 'Custom...'
+                    })
+                    .setValue(this.plugin.settings.timeFontSize)
+                    .onChange(async (value) => {
+                        if (value === 'custom') return;
+                        this.plugin.settings.timeFontSize = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+
+            // Date Color
+            this.createColorPaletteSetting(dateTimeEl, 'Date color', 'Choose color for the date text', 'dateColor');
+
+            // Time Color
+            this.createColorPaletteSetting(dateTimeEl, 'Time color', 'Choose color for the time text', 'timeColor');
+
+            // Background
+            new Setting(dateTimeEl)
+                .setName('Background')
+                .setDesc('Background style behind date/time')
+                .addDropdown(dropdown => dropdown
+                    .addOptions({
+                        'transparent': 'None (transparent)',
+                        'var(--background-secondary)': 'Secondary background',
+                        'var(--background-modifier-hover)': 'Hover background',
+                        'var(--interactive-accent)': 'Accent color',
+                        'custom': 'Custom color...'
+                    })
+                    .setValue(this.plugin.settings.dateTimeBackground)
+                    .onChange(async (value) => {
+                        if (value === 'custom') return;
+                        this.plugin.settings.dateTimeBackground = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+
+            // Background Opacity
+            if (this.plugin.settings.dateTimeBackground !== 'transparent') {
+                new Setting(dateTimeEl)
+                    .setName('Background opacity')
+                    .setDesc('Opacity of the date/time background')
+                    .addSlider(slider => slider
+                        .setLimits(0, 1, 0.1)
+                        .setValue(this.plugin.settings.dateTimeBackgroundOpacity)
+                        .setDynamicTooltip()
+                        .onChange(async (value) => {
+                            this.plugin.settings.dateTimeBackgroundOpacity = value;
+                            await this.plugin.saveSettings();
+                            this.plugin.refreshHomepage();
+                        }));
+            }
+
+            // Text Shadow
+            new Setting(dateTimeEl)
+                .setName('Text shadow')
+                .setDesc('Add shadow effect to date/time text')
+                .addToggle(toggle => toggle
+                    .setValue(this.plugin.settings.dateTimeShadow)
+                    .onChange(async (value) => {
+                        this.plugin.settings.dateTimeShadow = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+
+            // Border
+            new Setting(dateTimeEl)
+                .setName('Border')
+                .setDesc('Add border around date/time container')
+                .addToggle(toggle => toggle
+                    .setValue(this.plugin.settings.dateTimeBorder)
+                    .onChange(async (value) => {
+                        this.plugin.settings.dateTimeBorder = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+        }
+
+        // Theme Settings Section
+        const themeSection = new CollapsibleSection(
+            contentArea,
+            'Theme Settings',
+            'Customize colors and accent settings',
+            '🎨',
+            true
+        );
+        const themeEl = themeSection.getContentEl();
+
+        // Use Obsidian Accent
+        new Setting(themeEl)
+            .setName('Use Obsidian accent color')
+            .setDesc('Use Obsidian\'s accent color or set a custom one')
+            .addToggle(toggle => toggle
+                .setValue(this.plugin.settings.useObsidianAccent)
+                .onChange(async (value) => {
+                    this.plugin.settings.useObsidianAccent = value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                    this.refreshPanel(); // Refresh to show/hide custom color setting
+                }));
+
+        // Custom Accent Color (only show if not using Obsidian accent)
+        if (!this.plugin.settings.useObsidianAccent) {
+            new Setting(themeEl)
+                .setName('Custom accent color')
+                .setDesc('Custom accent color (hex format, e.g., #7c3aed)')
+                .addText(text => text
+                    .setPlaceholder('#7c3aed')
+                    .setValue(this.plugin.settings.customAccentColor)
+                    .onChange(async (value) => {
+                        this.plugin.settings.customAccentColor = value;
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                    }));
+        }
+
+        // Advanced Settings Section
+        const advancedSection = new CollapsibleSection(
+            contentArea,
+            'Advanced Settings',
+            'Reset settings and advanced configuration options',
+            '⚙️',
+            true
+        );
+        const advancedEl = advancedSection.getContentEl();
+        
+        // Reset to Defaults
+        new Setting(advancedEl)
+            .setName('Reset to defaults')
+            .setDesc('Reset all settings to their default values')
+            .addButton(button => button
+                .setButtonText('Reset')
+                .setWarning()
+                .onClick(async () => {
+                    const confirmed = confirm('Are you sure you want to reset all settings to defaults?');
+                    if (confirmed) {
+                        Object.assign(this.plugin.settings, { ...this.plugin.settings, ...await import('../types/settings').then(m => m.DEFAULT_SETTINGS) });
+                        await this.plugin.saveSettings();
+                        this.plugin.refreshHomepage();
+                        this.refreshPanel(); // Refresh the settings panel
+                    }
+                }));
+        
+        // Restore scroll position after a brief delay to allow DOM to settle
+        setTimeout(() => {
+            contentArea.scrollTop = scrollPosition;
+        }, 0);
     }
 
-    // Helper method to create color palette settings (simplified version)
     private createColorPaletteSetting(containerEl: HTMLElement, name: string, desc: string, settingKey: keyof CommandCenterSettings) {
-        const setting = new Setting(containerEl)
+        const colorSetting = new Setting(containerEl)
             .setName(name)
             .setDesc(desc);
 
-        const colorWrapper = setting.controlEl.createDiv({ cls: 'color-setting-wrapper' });
+        // Create color palette container
+        const colorPalette = colorSetting.controlEl.createDiv({ cls: 'color-palette' });
         
+        // Create a wrapper for the color setting and potential custom input
+        const colorWrapper = containerEl.createDiv({ cls: 'color-setting-wrapper' });
+        // Move the color setting into the wrapper
+        colorWrapper.appendChild(colorSetting.settingEl);
+        colorSetting.settingEl.setAttribute('data-color-setting', String(settingKey));
+        
+        // Define color options
         const colorOptions = [
             { name: 'Default', value: 'var(--text-muted)' },
+            { name: 'Normal', value: 'var(--text-normal)' },
             { name: 'Accent', value: 'var(--text-accent)' },
-            { name: 'Red', value: '#ff6b6b' },
-            { name: 'Blue', value: '#4dabf7' },
-            { name: 'Green', value: '#51cf66' },
-            { name: 'Purple', value: '#9775fa' },
-            { name: 'Orange', value: '#ff922b' }
+            { name: 'White', value: 'white' },
+            { name: 'Black', value: 'black' },
+            { name: 'Red', value: '#ff4757' },
+            { name: 'Orange', value: '#ffa502' },
+            { name: 'Yellow', value: '#ffdd59' },
+            { name: 'Green', value: '#2ed573' },
+            { name: 'Blue', value: '#3742fa' },
+            { name: 'Purple', value: '#8c7ae6' },
+            { name: 'Custom', value: 'custom' }
         ];
 
-        const palette = colorWrapper.createDiv({ cls: 'color-palette' });
-        
-        colorOptions.forEach(option => {
-            const colorOption = palette.createDiv({ 
-                cls: `color-option ${this.plugin.settings[settingKey] === option.value ? 'selected' : ''}` 
+        // Create color buttons
+        colorOptions.forEach(color => {
+            const colorBtn = colorPalette.createEl('button', { 
+                cls: 'color-option color-option-small',
+                title: color.name
             });
-            colorOption.style.backgroundColor = option.value;
-            colorOption.title = option.name;
             
-            colorOption.addEventListener('click', async () => {
-                // Remove previous selection
-                palette.querySelectorAll('.color-option').forEach(el => el.removeClass('selected'));
-                colorOption.addClass('selected');
+            if (color.value === 'custom') {
+                colorBtn.textContent = '✎';
+                colorBtn.style.background = 'linear-gradient(45deg, #ff6b6b, #4ecdc4)';
+                colorBtn.style.color = 'white';
+            } else if (color.value.startsWith('var(')) {
+                colorBtn.style.background = color.value;
+                colorBtn.textContent = color.name.charAt(0);
+                colorBtn.style.color = color.value === 'var(--text-muted)' ? 'var(--text-on-accent)' : 'white';
+            } else {
+                colorBtn.style.backgroundColor = color.value;
+                if (color.value === 'white' || color.value === '#ffdd59') {
+                    colorBtn.style.border = '2px solid #ccc';
+                }
+            }
+            
+            // Add selection indicator
+            if ((this.plugin.settings as any)[settingKey] === color.value) {
+                colorBtn.addClass('selected');
+            }
+            
+            colorBtn.addEventListener('click', async () => {
+                // Remove selection from all buttons
+                colorPalette.querySelectorAll('.color-option').forEach(btn => btn.removeClass('selected'));
                 
-                // Update setting
-                (this.plugin.settings as any)[settingKey] = option.value;
-                await this.plugin.saveSettings();
-                this.plugin.refreshHomepage();
+                if (color.value === 'custom') {
+                    colorBtn.addClass('selected');
+                    this.showCustomColorInputForKey(colorWrapper, settingKey);
+                } else {
+                    colorBtn.addClass('selected');
+                    (this.plugin.settings as any)[settingKey] = color.value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                    // Remove any existing custom input from this wrapper
+                    const existingCustom = colorWrapper.querySelector(`[data-setting-key="${String(settingKey)}"]`);
+                    if (existingCustom) {
+                        existingCustom.remove();
+                    }
+                }
             });
         });
 
+        // Show custom input if current color is not in presets
+        const isPresetColor = colorOptions.some(option => option.value === (this.plugin.settings as any)[settingKey]);
+        if (!isPresetColor && (this.plugin.settings as any)[settingKey] !== 'custom') {
+            this.showCustomColorInputForKey(colorWrapper, settingKey);
+        }
+        
+        return colorWrapper;
+    }
+
+    private showCustomColorInputForKey(wrapperEl: HTMLElement, settingKey: keyof CommandCenterSettings) {
+        // Remove any existing custom input for this setting
+        const existingCustom = wrapperEl.querySelector(`[data-setting-key="${String(settingKey)}"]`);
+        if (existingCustom) {
+            existingCustom.remove();
+        }
+
+        // Create a temporary container for the custom setting
+        const tempContainer = document.createElement('div');
+        
+        // Create custom color input
+        const customColorSetting = new Setting(tempContainer)
+            .setName(`Custom ${String(settingKey).replace('Color', '')} color`)
+            .setDesc('Enter a custom color (e.g., #ff6b6b, rgb(255,107,107), var(--text-accent))')
+            .addText(text => text
+                .setPlaceholder('#ff6b6b')
+                .setValue((this.plugin.settings as any)[settingKey] === 'custom' ? '' : (this.plugin.settings as any)[settingKey] as string)
+                .onChange(async (value) => {
+                    (this.plugin.settings as any)[settingKey] = value || 'var(--text-muted)';
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                }));
+
+        customColorSetting.settingEl.addClass('custom-color-setting');
+        customColorSetting.settingEl.setAttribute('data-setting-key', String(settingKey));
+        
+        // Move the setting element from temp container to wrapper
+        wrapperEl.appendChild(customColorSetting.settingEl);
+    }
+
+    private createBannerColorPaletteSetting(containerEl: HTMLElement, name: string, desc: string, settingKey: keyof CommandCenterSettings) {
+        const colorSetting = new Setting(containerEl)
+            .setName(name)
+            .setDesc(desc);
+
+        // Create color palette container
+        const colorPalette = colorSetting.controlEl.createDiv({ cls: 'color-palette' });
+        
+        // Create a wrapper for the color setting and potential custom input
+        const colorWrapper = containerEl.createDiv({ cls: 'color-setting-wrapper' });
+        // Move the color setting into the wrapper
+        colorWrapper.appendChild(colorSetting.settingEl);
+        colorSetting.settingEl.setAttribute('data-color-setting', String(settingKey));
+        
+        // Define banner color options (original banner colors)
+        const colorOptions = [
+            { name: 'White', value: 'white' },
+            { name: 'Black', value: 'black' },
+            { name: 'Red', value: '#ff4757' },
+            { name: 'Orange', value: '#ffa502' },
+            { name: 'Yellow', value: '#ffdd59' },
+            { name: 'Green', value: '#2ed573' },
+            { name: 'Blue', value: '#3742fa' },
+            { name: 'Purple', value: '#8c7ae6' },
+            { name: 'Pink', value: '#ff6b9d' },
+            { name: 'Gray', value: '#57606f' },
+            { name: 'Accent', value: 'var(--text-accent)' },
+            { name: 'Custom', value: 'custom' }
+        ];
+
+        // Create color buttons
+        colorOptions.forEach(color => {
+            const colorBtn = colorPalette.createEl('button', { 
+                cls: 'color-option color-option-small',
+                title: color.name
+            });
+            
+            if (color.value === 'custom') {
+                colorBtn.textContent = '✎';
+                colorBtn.style.background = 'linear-gradient(45deg, #ff6b6b, #4ecdc4)';
+                colorBtn.style.color = 'white';
+            } else if (color.value.startsWith('var(')) {
+                colorBtn.style.background = color.value;
+                colorBtn.textContent = color.name.charAt(0);
+                colorBtn.style.color = 'white';
+            } else {
+                colorBtn.style.backgroundColor = color.value;
+                if (color.value === 'white' || color.value === '#ffdd59') {
+                    colorBtn.style.border = '2px solid #ccc';
+                }
+            }
+            
+            // Add selection indicator
+            if ((this.plugin.settings as any)[settingKey] === color.value) {
+                colorBtn.addClass('selected');
+            }
+            
+            colorBtn.addEventListener('click', async () => {
+                // Remove selection from all buttons
+                colorPalette.querySelectorAll('.color-option').forEach(btn => btn.removeClass('selected'));
+                
+                if (color.value === 'custom') {
+                    colorBtn.addClass('selected');
+                    this.showCustomColorInputForKey(colorWrapper, settingKey);
+                } else {
+                    colorBtn.addClass('selected');
+                    (this.plugin.settings as any)[settingKey] = color.value;
+                    await this.plugin.saveSettings();
+                    this.plugin.refreshHomepage();
+                    // Remove any existing custom input from this wrapper
+                    const existingCustom = colorWrapper.querySelector(`[data-setting-key="${String(settingKey)}"]`);
+                    if (existingCustom) {
+                        existingCustom.remove();
+                    }
+                }
+            });
+        });
+
+        // Show custom input if current color is not in presets
+        const isPresetColor = colorOptions.some(option => option.value === (this.plugin.settings as any)[settingKey]);
+        if (!isPresetColor && (this.plugin.settings as any)[settingKey] !== 'custom') {
+            this.showCustomColorInputForKey(colorWrapper, settingKey);
+        }
+        
         return colorWrapper;
     }
 }
